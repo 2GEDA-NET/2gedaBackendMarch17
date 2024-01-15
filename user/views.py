@@ -50,6 +50,10 @@ import os
 import json
 import csv
 from datetime import datetime
+from django.db.models import Prefetch
+import requests
+from django.core.mail import EmailMessage
+from django.template.loader import render_to_string, get_template
 # from geopy.geocoders import Nominatim
 
 
@@ -79,6 +83,24 @@ def send_email(subject, message, to_email):
     send_message(credentials, message)
 
 # Within your view function
+def sendmail(subject, message, user_email, username):
+    ctx = {
+        'message': message,
+        "subject": subject,
+        "username": username
+    }
+    message = get_template('email.html').render(ctx)
+    msg = EmailMessage(
+        subject,
+        message,
+        settings.DEFAULT_FROM_EMAIL,
+        [user_email],
+    )
+    msg.content_subtype = "html"  # Main content is now text/html
+    msg.send()
+
+
+
 
 
 def generate_otp_code(secret_key, length=5):
@@ -175,6 +197,17 @@ def get_country(latitude):
 #             return JsonResponse({'error': 'Unable to determine location'})
 
 
+class SendDemoMail(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+
+    def get(self, request, format=None):
+        sendmail(subject="OTP VERIFICATION", message=27089, user_email="egbeyemifisola777@gmail.com", username=request.user.username)
+        
+        return Response({"response": "sent"}, status=200)
+
+
+
 
 @api_view(['POST'])
 @csrf_exempt
@@ -235,6 +268,7 @@ def create_user(request):
                 otp_code = generate_otp_code(user.secret_key)
 
                 user.otp = otp_code
+                user.otp_time = datetime.now()
                 user.save()
                 # Send the OTP to the user via email
                 # send_mail(
@@ -252,7 +286,8 @@ def create_user(request):
                 #     from_=TWILIO_PHONE_NUMBER,
                 #     to=phone_number,  # Replace with the user's phone_number field
                 # )
-
+                
+                sendmail(subject="OTP VERIFICATION", message= otp_code, user_email=user.email, username=user.username)
                 response_data = serializer.data
                 response_data['token'] = token_key
 
@@ -752,6 +787,31 @@ class UserAPIView(RetrieveAPIView):
         return self.request.user
 
 
+class AllUserAPIView(ListAPIView):
+    """
+    Get user details
+    """
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+
+class SuggestedUserAPIView(APIView):
+    """
+    Get user details
+    """
+
+    def get(self,request, format=None):
+        user_query = User.objects.get(pk=request.user.pk)
+
+        sticked_user = user_query.stickers.values("username")
+        media_prefetch = Prefetch('media', queryset=UserProfileImage.objects.all(), to_attr='media_list')
+        
+        users = User.objects.exclude(username__in=list(sticked_user), username=request.user.username).prefetch_related(media_prefetch).values("username", "media__profile_image",  "cover_image__cover_image")
+
+        return Response(list(users), status=200)
+        # serializer_class = UserSerializer.
+        
 # Report Users API
 
 @api_view(['POST'])
@@ -1448,17 +1508,29 @@ class UserConnectAPIView(APIView):
         username = request.user.username
         print(username)
         user = User.objects.get(username=username)
-        city = user.address.city
-        current_city =  user.address.current_city
-        print(current_city)
+
+        if user.address:
+            if user.address.city:
+                # city = user.address.city
+                
+                current_city =  user.address.current_city
+                print(current_city)
+                
+                    # Perform a case-insensitive search across relevant fields in the database
+                results = User.objects.filter(
+                    Q(address__current_city__icontains=current_city) 
+                ).exclude(email=request.user.email)
+                serializer = UserSerializer(results, many=True)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+    
         
             # Perform a case-insensitive search across relevant fields in the database
         results = User.objects.filter(
-            Q(address__current_city__icontains=current_city) 
-        )
+            ~Q(cover_image__isnull=True) 
+        ).exclude(email=request.user.email)
         serializer = UserSerializer(results, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-       
+
 
 User
 class ConnectSortAPIView(APIView):
@@ -1518,4 +1590,76 @@ class AllLocationAPIView(APIView):
         results = UserGeoInformation.objects.all()
         results = results.values()
         return Response(results, status=status.HTTP_200_OK)
+
+
+config = settings.PAYSTACK_SECRET_KEY
+class MakePaymentView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request,format=None):
+        amount = request.GET.get("amount")
+
+
+        headers = {
+            'Authorization': f'Bearer {config}',
+            'Content-Type': 'application/json',
+        }
+
+        print(amount)
+
+        ab = {"amount": float(amount), "email": request.user.email}
+        data = json.dumps(ab)
+        response = requests.post(
+            'https://api.paystack.co/transaction/initialize', headers=headers, data=data)
+        print(response.text)
+        loaddata = json.loads(response.text)
+        url = loaddata["data"]["authorization_url"]
+
+        return Response({"url": url}, status=200)
+
+from feed.serializers import CreatePostSerializer
+
+
+def query_test(request):
+    posts = PostMedia.objects.select_related(
+        'user','post__user',
         
+        'user__broadcastpermission',
+        'user__userprofile',
+        'user__businessownerprofile',
+        'user__cover_image','user__address', 
+        'post', 'post__comments',
+        'post__reaction','user_profile', 
+        'user_profile__user',
+        'user_profile__media',
+        'user_profile__address',
+        'user_profile__cover_image',
+
+       
+        ).prefetch_related(
+        "Reaction","tagged_users_post", 
+        'hashtags','hashtags__user', 
+        'each_media','each_media__user', 
+        'comment_text', 'comment_text__user', 
+        'comment_text__post', 'comment_text__responses', 
+        'comment_text__reaction', 'comment_text__media', 
+        'tagged_users_post__user', 'hashtags__post',
+        'each_media__post',
+        'tagged_users_post',
+        'tagged_users_post__media',
+        'tagged_users_post__stickers',
+        'tagged_users_post__cover_image',
+        'Reaction__user',
+        'tagged_users_post__user'
+        'tagged_users_post__address'
+        
+        ).annotate(
+            post_reaction_count=Count("Reaction"),
+            post_comment_count=Count("comment_text")
+        ).order_by('-time_stamp')[:20]
+   
+    serializer = CreatePostSerializer(posts, many=True)
+    serialized_data = serializer.data
+
+    context = {'post': serialized_data}
+    return render(request, 'querytest.html', context)

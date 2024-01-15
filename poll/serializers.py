@@ -141,7 +141,9 @@ def validate_duration(duration:str, created_at):
 
 class PollSerializer(serializers.ModelSerializer):
     # count_views = serializers.SerializerMethodField()
-    user = UserSerializer(required=False)
+    user = serializers.HiddenField(
+        default=serializers.CurrentUserDefault()
+    )
     media = PollMediaSerializer(required=False)
     options_list =  OptionListSerializer(required=False, many=True) 
     options =  OptionSerializer(required=False, many=True, read_only=True) 
@@ -153,11 +155,6 @@ class PollSerializer(serializers.ModelSerializer):
     def get_count_views(self, obj):
         return obj.count_views()
 
-
-    def create(self, validated_data):
-        # Ensure that the user who creates the poll is the request user
-        validated_data['user'] = self.context['request'].user
-        return super(PollSerializer, self).create(validated_data)
     
     def to_representation(self, instance):
         representation = super().to_representation(instance)

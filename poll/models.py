@@ -116,6 +116,8 @@ class Poll(models.Model):
     username = models.CharField(max_length=250, null=True)
     time_stamp = models.DateTimeField(default=timezone.now)
     time_duration = models.DurationField(null=True)
+    is_promoted = models.BooleanField(default=False)
+
 
 
 

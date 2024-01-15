@@ -116,7 +116,9 @@ class GetPaymentView(APIView):
             'Content-Type': 'application/json',
         }
 
-        ab = {"amount": amount, "email": request.user.email}
+        print(amount)
+
+        ab = {"amount": float(amount), "email": request.user.email}
         data = json.dumps(ab)
         response = requests.post(
             'https://api.paystack.co/transaction/initialize', headers=headers, data=data)
@@ -127,6 +129,31 @@ class GetPaymentView(APIView):
         payment = Ticket_Payment.objects.create(ticket=ticket, user=request.user, amount=amount, is_initiated=True, url=url)
         response = PaystackPaymentSerializer(payment)
         return Response(response.data, status=200)
+
+
+class MakePaymentView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request,format=None):
+        amount = request.GET.get("amount")
+
+
+        headers = {
+            'Authorization': f'Bearer {config}',
+            'Content-Type': 'application/json',
+        }
+
+        print(amount)
+
+        ab = {"amount": float(amount), "email": request.user.email}
+        data = json.dumps(ab)
+        response = requests.post(
+            'https://api.paystack.co/transaction/initialize', headers=headers, data=data)
+        print(response.text)
+        loaddata = json.loads(response.text)
+        url = loaddata["data"]["authorization_url"]
+
+        return Response({"url": url}, status=200)
 
 
 
@@ -795,50 +822,55 @@ class PayOnlineDone(APIView):
             print(user_email)
             amount = ab['data']['amount']
             user =  CustomUser.objects.get(email=user_email)
-            if Ticket_Payment.objects.filter(user=user) is None:
-                Ticket_Issues.objects.create(
-                    user=user,
-                    description="Payment Initiation was False",
-                    )
+
+            user.fund(id=user.pk, amount=amount)
+
+            return Response({"response" : "Success."}, status=200)
+
+            # if Ticket_Payment.objects.filter(user=user) is None:
+            #     Ticket_Issues.objects.create(
+            #         user=user,
+            #         description="Payment Initiation was False",
+            #         )
                 
-            elif Ticket_Payment.objects.filter(user=user).latest() is not None:
-                payment_initiated = Ticket_Payment.objects.filter(user=user).latest()
+            # elif Ticket_Payment.objects.filter(user=user).latest() is not None:
+            #     payment_initiated = Ticket_Payment.objects.filter(user=user).latest()
 
-                if payment_initiated.is_completed == False:
-                    # if payment_initiated.amount == amount:
+            #     if payment_initiated.is_completed == False:
+            #         # if payment_initiated.amount == amount:
 
-                    event = Event.objects.get(ticket__pk=payment_initiated.ticket.pk)
-                    Ticket_Sales_Ticket.objects.create(
-                        user=user,
-                        desc= event.desc,
-                        platform=event.platform,
-                        category=event.category,
-                        location=event.location,
-                        url=event.url,
-                        event_key = event.event_key,
-                        ticket_key = event.ticket.ticket_key,
-                        ticket_category = event.ticket.category,
-                        ticket_price = event.ticket.price,
-                        ticket_quantity = event.ticket.price,
+            #         event = Event.objects.get(ticket__pk=payment_initiated.ticket.pk)
+            #         Ticket_Sales_Ticket.objects.create(
+            #             user=user,
+            #             desc= event.desc,
+            #             platform=event.platform,
+            #             category=event.category,
+            #             location=event.location,
+            #             url=event.url,
+            #             event_key = event.event_key,
+            #             ticket_key = event.ticket.ticket_key,
+            #             ticket_category = event.ticket.category,
+            #             ticket_price = event.ticket.price,
+            #             ticket_quantity = event.ticket.price,
                         
-                    )
+            #         )
               
 
-                    return Response({"response":"success"}, status=200)
+            #         return Response({"response":"success"}, status=200)
                 
-                Ticket_Issues.objects.create(
-                    user=user,
-                    description="Payment Initiation was False",
-                    )
+            #     Ticket_Issues.objects.create(
+            #         user=user,
+            #         description="Payment Initiation was False",
+            #         )
 
-                return Response({'response':'Our payment gateway return Payment tansaction failed status {}'.format(ab["message"])}, status=200)      
+            #     return Response({'response':'Our payment gateway return Payment tansaction failed status {}'.format(ab["message"])}, status=200)      
 
-            else:
-                Ticket_Issues.objects.create(
-                    description="Transaction Failed",
-                    )
+            # else:
+            #     Ticket_Issues.objects.create(
+            #         description="Transaction Failed",
+            #         )
 
-                return Response({'response':'Our payment gateway return Payment tansaction failed status {}'.format(ab["message"])}, status=200)
+            #     return Response({'response':'Our payment gateway return Payment tansaction failed status {}'.format(ab["message"])}, status=200)
 
     
         return Response({"response" : "Permission denied."}, status=400)

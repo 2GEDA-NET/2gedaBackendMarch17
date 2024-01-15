@@ -37,6 +37,12 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ["id","email","is_business","is_personal","account_balance","is_admin","username","phone_number","is_verified","address","media","cover_image","last_seen","bio"]
 
+class UserSuggestedSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ["id","email","is_business","is_personal","account_balance","is_admin","phone_number","is_verified","address","last_seen","bio"]
+
 
 
 

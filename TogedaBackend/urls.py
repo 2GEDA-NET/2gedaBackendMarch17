@@ -19,6 +19,7 @@ from reward.api.v1 import urls as reward_url
 from utils import urls as utils_url
 from django.conf import settings
 from django.conf.urls.static import static
+from ticket.views import MakePaymentView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -31,7 +32,9 @@ urlpatterns = [
     path("poll/", include('poll.urls')),
     path("stereo/", include('stereo.urls')),
     path("reward/", include(reward_url)),
-    path("", include(utils_url))
+    path("", include(utils_url)),
+    path("fund-account", MakePaymentView.as_view()),
+    path("__debug__/", include("debug_toolbar.urls")),
 ]
 
 

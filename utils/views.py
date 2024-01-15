@@ -146,3 +146,5 @@ class UserGeographyView(APIView):
         user_geo = Geopraphical_Location.objects.filter(user= request.user).values()
 
         return Response(list(user_geo), status=200)
+
+

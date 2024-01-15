@@ -97,10 +97,33 @@ class VoteDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = VoteSerializer
 
 
+class SuggestedPollView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = Poll.objects.order_by('?')[:20]
+    serializer_class = PollSerializer
+
+
+class PromotedPollView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = Poll.objects.filter(is_promoted=True).order_by('-created_at')
+    serializer_class = PollSerializer
+
+class MakePollsPromoted(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, format=None):
+        poll_id = request.data["poll_id"]
+
+        poll = Poll.objects.get(pk=int(poll_id))
+        poll.is_promoted = True
+        poll.save()
+
+        return Response({"response": "ok"}, status=200)
+
 
 class PollListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
-    queryset = Poll.objects.all().order_by('created_at')[:30]
+    queryset = Poll.objects.all().order_by('-created_at')[:10]
     serializer_class = PollSerializer
 
     def perform_create(self, serializer):

@@ -296,10 +296,40 @@ class CreatePostSerializer(serializers.ModelSerializer):
     Reaction = ReactionSerializer(many=True, required=False)
     post_reaction_count = serializers.SerializerMethodField()
     post_comment_count = serializers.SerializerMethodField()
+
     
+    
+
+
     class Meta:
         model = PostMedia
-        fields = "__all__"
+        fields = [ "user",
+                    "post", 
+                    "media",
+                    "time_stamp",
+                    "content", 
+                    "shares",
+                    "comment_text",
+                    "Reaction",
+                    "comment",
+                    "likes",
+                    "love",
+                    "dislike",
+                    "other_reactions",
+                    "is_paid",
+                    "post_type",
+                    "each_media",
+                    "hashtags",
+                    "file_type", 
+                    "is_business_post",
+                    "is_personal_post",
+                    "tagged_users_post",
+                    "time_since",
+                    "post_reaction_count",
+                    "post_comment_count"
+                    ]
+        
+        
 
     def validate(self, attrs):
         error = {}

@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'django_otp.plugins.otp_totp',
     'django_otp.plugins.otp_hotp',
     'django_otp.plugins.otp_static',
+    "debug_toolbar",
     
     
 
@@ -106,12 +107,14 @@ MIDDLEWARE = [
     # 'channels.middleware.WebSocketMiddleware',
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",  # Moved up
     "django.contrib.messages.middleware.MessageMiddleware",
     'django_otp.middleware.OTPMiddleware',
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    
     # 'rest_framework.authtoken.middleware.AuthenticationMiddleware',
    
 ]
@@ -144,7 +147,10 @@ ROOT_URLCONF = "TogedaBackend.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [
+              'templates',
+                os.path.join(BASE_DIR, 'user/templates'),
+        ],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -192,6 +198,11 @@ DATABASES = {
     # }
 }
 
+INTERNAL_IPS = [
+    # ...
+    "127.0.0.1",
+    # ...
+]
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
@@ -277,3 +288,22 @@ DEFAULT_FILE_STORAGE = config('DEFAULT_FILE_STORAGE')
 TWILIO_ACCOUNT_SID = config('TWILIO_ACCOUNT_SID')
 TWILIO_AUTH_TOKEN = config('TWILIO_AUTH_TOKEN')
 TWILIO_PHONE_NUMBER = config('TWILIO_PHONE_NUMBER')
+
+
+EMAIL_HOST = 'mail.2geda.net'
+EMAIL_HOST_USER = 'support@2geda.net'
+EMAIL_HOST_PASSWORD = 'Y[[_3g=)^1Zl'
+DEFAULT_FROM_EMAIL = 'support@2geda.net'
+SERVER_EMAIL = 'mail.2geda.net' 
+EMAIL_PORT = 465
+EMAIL_USE_TLS = False
+EMAIL_USE_SSL = True
+EMAIL_FILE_PATH = os.path.join(BASE_DIR,'sent_emails')
+
+
+if DEBUG == False:
+     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+

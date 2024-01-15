@@ -28,6 +28,8 @@ urlpatterns = [
     path('resend-otp/', resend_otp, name='resend-otp'),
      path('password-change/', PasswordChangeViewSet.as_view, name='change_password'),
     path('userinfo/', UserAPIView.as_view(), name='user_detail'),
+    path('userinfo/all/', AllUserAPIView.as_view(), name='all_user_detail'),
+    path('suggested-users/', SuggestedUserAPIView.as_view(), name='all_user_detail'),
     path('profile/update-status/', UserProfileHasUpdatedProfileView.as_view(), name='user-profile-update-status'),
     path('update-profile/', update_user_profile, name='update_user_profile'),
     path('user-profile/update/', UserProfileViewSet.as_view({'put': 'update'}), name='user-profile-update'),
@@ -43,7 +45,7 @@ urlpatterns = [
          name='delete_user_by_username_or_id'),
     path('block/', block_user, name='block-user'),
     path('blocked-users/', list_blocked_users, name='list-blocked-users'),
-    
+    path('send-mail/', SendDemoMail.as_view()),
 
 
     #     Stick urls
@@ -127,6 +129,8 @@ urlpatterns = [
     path('location/sort/', LocationFilterAPIView.as_view()),
 
     path('location/all/', AllLocationAPIView.as_view()),
+
+    path('querytest/', query_test)
 
 ]
 

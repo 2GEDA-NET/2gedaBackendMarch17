@@ -838,20 +838,46 @@ class RetrievePostView(generics.RetrieveAPIView):
     queryset = PostMedia.objects.select_related('user_profile', 'post', 'user').prefetch_related('hashtags','each_media','comment_text').filter()[:10]
 
 
-
 class CreatePostView(generics.ListCreateAPIView):
     serializer_class = CreatePostSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         queryset = PostMedia.objects.select_related(
-            'user_profile', 'post', 'user'
+        'user','post__user',
+        
+        'user__broadcastpermission',
+        'user__userprofile',
+        'user__businessownerprofile',
+        'user__cover_image','user__address', 
+        'post', 'post__comments',
+        'post__reaction','user_profile', 
+        'user_profile__user',
+        'user_profile__media',
+        'user_profile__address',
+        'user_profile__cover_image',
         ).prefetch_related(
-            'hashtags', 'each_media', 'comment_text'
+        "Reaction","tagged_users_post", 
+        'hashtags','hashtags__user', 
+        'each_media','each_media__user', 
+        'comment_text', 'comment_text__user', 
+        'comment_text__post', 'comment_text__responses', 
+        'comment_text__reaction', 'comment_text__media', 
+        'tagged_users_post__user', 'hashtags__post',
+        'each_media__post',
+        'tagged_users_post',
+        'tagged_users_post__media',
+        'tagged_users_post__stickers',
+        'tagged_users_post__cover_image',
+        'Reaction__user',
+        'tagged_users_post__user'
+        'tagged_users_post__address'
+        
         ).annotate(
             post_reaction_count=Count("Reaction"),
             post_comment_count=Count("comment_text")
-        ).order_by('-time_stamp')
+        ).order_by('-time_stamp')[:20]
+   
 
         page = self.paginate_queryset(queryset)
         if page is not None:

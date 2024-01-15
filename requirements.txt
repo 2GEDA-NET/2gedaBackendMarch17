@@ -42,7 +42,9 @@ face-recognition-models==0.3.0
 fido2==1.0.0
 filelock==3.12.4
 frozenlist==1.4.0
+geographiclib==2.0
 geoip2==4.8.0
+geopy==2.4.1
 google-auth==2.23.3
 gunicorn==21.2.0
 idna==3.4

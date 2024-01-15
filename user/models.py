@@ -44,13 +44,6 @@ DAYS_OF_THE_WEEK_CHOICES = (
 )
 
 
-class BusinessCategory(models.Model):
-    name = models.CharField(max_length=250)
-    desc = models.TextField()
-
-    def __str__(self):
-        return self.name
-
 RELIGION_CHOICES = [
     ('Christianity', 'Christianity'),
     ('Muslim', 'Muslim'),
@@ -96,6 +89,7 @@ class User(AbstractUser):
     last_seen = models.DateTimeField(null=True, blank=True)
     otp = models.CharField(max_length=5, blank=True)
     otp_verified = models.BooleanField(default=False)
+    otp_time = models.DateTimeField(null=True)
     secret_key = models.CharField(default=generate_random_string)
     account_balance = models.IntegerField(default=0)
     previous_balance = models.IntegerField(default=0)
@@ -109,9 +103,9 @@ class User(AbstractUser):
     media = models.ManyToManyField("UserProfileImage", related_name='user_profile_media')
     cover_image = models.ForeignKey("UserCoverImage", on_delete=models.CASCADE, blank=True, null=True, related_name='users_image')
     address = models.ForeignKey('Address', on_delete=models.CASCADE, null=True, related_name='home_address')
-    stickers = models.ManyToManyField('self', related_name='sticking',null=True,  symmetrical=False)
+    stickers = models.ManyToManyField('self', related_name='sticking', symmetrical=False)
     is_flagged = models.BooleanField(default=False, verbose_name='Flagged_User')
-    favorite_categories = models.ManyToManyField(BusinessCategory, related_name='users_favorite', blank=True, null=True)
+    favorite_categories = models.ManyToManyField(BusinessCategory, related_name='users_favorite', blank=True,)
     searched_polls = models.ManyToManyField('poll.Poll', related_name='user_searched', blank=True)
     has_updated_profile = models.BooleanField(default=False)
     bio = models.TextField(null=True)
@@ -177,12 +171,12 @@ RELIGION_CHOICES = [
 
 class UserCoverImage(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    cover_image = models.ImageField(upload_to='cover_image/', storage=S3Boto3Storage() )
+    cover_image = models.FileField(upload_to='cover_image/', null=True, blank=True )
 
 
 class UserProfileImage(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    profile_image = models.ImageField(upload_to='cover_image/', storage=S3Boto3Storage() )
+    profile_image = models.FileField(upload_to='cover_image/', null=True, blank=True )
 
 
 class UserProfile(models.Model):

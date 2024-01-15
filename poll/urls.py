@@ -8,6 +8,7 @@ urlpatterns = [
     path('votes/', VoteListCreateView.as_view(), name='vote-list-create'),
     path('votes/<int:pk>/', VoteDetailView.as_view(), name='vote-detail'),
     path('polls/', PollListCreateView.as_view(), name='poll-list-create'),
+    path('suggested-polls/', SuggestedPollView.as_view()),
     path('polls/<int:pk>/', PollDetailView.as_view(), name='poll-detail'),
     path('active-polls/', ActivePollsView.as_view(), name='active-polls'),
     path('ended-polls/', EndedPollsView.as_view(), name='ended-polls'),
@@ -16,7 +17,7 @@ urlpatterns = [
     path('public-polls/', PublicPollsView.as_view(), name='public-polls'),
     path('create-poll/', CreatePollView.as_view(), name='create-poll'),
     path('search-polls/', SearchPollsView.as_view(), name='search-polls'),
-    path('suggested-polls/', SuggestedPollsAPIView.as_view(), name='suggested-polls'),
+
     path('log-poll-view/<int:poll_id>/', log_poll_view, name='log-poll-view'),
     path('access-request/', AccessRequestView.as_view(), name='access-request'),
     path('approve-access/', AccessApprovalView.as_view(), name='approve-access'),
@@ -27,5 +28,7 @@ urlpatterns = [
     path('polls-with-vote-count/', PollsWithVoteCountView.as_view(), name='polls-with-vote-count'),
     path('polls/results/<int:poll_id>/', PollResultsView.as_view(), name='poll-results'),
     path('payment/', PollsPaymentView.as_view()),
+    path('promote/', MakePollsPromoted.as_view()),
+    path('promoted/', PromotedPollView.as_view()),
 
 ]
