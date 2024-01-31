@@ -682,3 +682,4 @@ class EncryptionKeyAPIView(APIView):
                 return Response({'detail': 'Encryption key not found for this conversation.'}, status=status.HTTP_404_NOT_FOUND)
         except Conversation.DoesNotExist:
             return Response({'detail': 'Conversation not found.'}, status=status.HTTP_404_NOT_FOUND)
+

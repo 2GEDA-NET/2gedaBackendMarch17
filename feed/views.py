@@ -863,14 +863,13 @@ class CreatePostView(generics.ListCreateAPIView):
         'comment_text', 'comment_text__user', 
         'comment_text__post', 'comment_text__responses', 
         'comment_text__reaction', 'comment_text__media', 
-        'tagged_users_post__user', 'hashtags__post',
+         'hashtags__post',
         'each_media__post',
         'tagged_users_post',
         'tagged_users_post__media',
         'tagged_users_post__stickers',
         'tagged_users_post__cover_image',
         'Reaction__user',
-        'tagged_users_post__user'
         'tagged_users_post__address'
         
         ).annotate(
@@ -893,9 +892,10 @@ class CreatePostView(generics.ListCreateAPIView):
         if "media" in self.request.data:
             media_list = []
             medias = self.request.FILES.getlist("media")
+            file_type = self.request.data["file_type"]
             for each_media in medias:
                 print(each_media)
-                media = MediaPost.objects.create(user=self.request.user, media=each_media)
+                media = MediaPost.objects.create(user=self.request.user, media=each_media, media_type=file_type)
                 media_list.append(media)
             
             instance.each_media.add(*media_list)
@@ -921,10 +921,12 @@ class CreatePostView(generics.ListCreateAPIView):
             for tagged_user in tagged_users:
                         
                 if str(tagged_user).startswith("@"):
-                
-                        username = str(tagged_user)[1:]
-                        user = User.objects.get(username=username)
-                        tagged_users_list.append(user)
+                        try:
+                            username = str(tagged_user)[1:]
+                            user = User.objects.get(username=username)
+                            tagged_users_list.append(user)
+                        except:
+                            pass
 
                 else:
                     pass

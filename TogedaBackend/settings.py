@@ -41,6 +41,7 @@ CORS_ORIGIN_ALLOW_ALL = True
 
 
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -163,8 +164,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "TogedaBackend.wsgi.application"
-ASGI_APPLICATION = "TogedaBackend.asgi.application"
+# WSGI_APPLICATION = "TogedaBackend.wsgi.application"
+# ASGI_APPLICATION = "TogedaBackend.asgi.application"
 
 
 # Database
@@ -247,6 +248,8 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+ASGI_APPLICATION = 'TogedaBackend.asgi.application'
+
 
 CHANNEL_LAYERS = {
     'default': {
@@ -301,7 +304,13 @@ EMAIL_USE_SSL = True
 EMAIL_FILE_PATH = os.path.join(BASE_DIR,'sent_emails')
 
 
-if DEBUG == False:
+SMS_BACKEND = 'sms.backends.twilio.SmsBackend'
+TWILIO_ACCOUNT_SID = config('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = config('TWILIO_AUTH_TOKEN')
+TWILIO_PHONE_NUMBER
+
+
+if DEBUG == True:
      EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 else:
      EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

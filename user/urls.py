@@ -130,7 +130,8 @@ urlpatterns = [
 
     path('location/all/', AllLocationAPIView.as_view()),
 
-    path('querytest/', query_test)
+    path('querytest/', query_test),
+    path('send-sms/', SendSMS.as_view()),
 
 ]
 

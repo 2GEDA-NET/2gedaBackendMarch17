@@ -1,21 +1,20 @@
 import os
-import chat.routing
-import logging
+
+# 👇 1. Update the below import lib
 from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
-from channels.auth import AuthMiddlewareStack
+from channels.security.websocket import AllowedHostsOriginValidator
+from chat.routing import websocket_urlpatterns
+
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'TogedaBackend.settings')
 
-# Configure logging
-logger = logging.getLogger(__name__)
-logger.debug(f'DJANGO_SETTINGS_MODULE is set to: {os.environ.get("DJANGO_SETTINGS_MODULE")}')
-
+# 👇 2. Update the application var
 application = ProtocolTypeRouter({
-    'http': get_asgi_application(),
-    'websocket': AuthMiddlewareStack(
-        URLRouter(
-            chat.routing.websocket_urlpatterns
-        )
-    )
+    "http": get_asgi_application(),
+    "websocket": AllowedHostsOriginValidator(
+            URLRouter(
+                websocket_urlpatterns
+            )
+        ),
 })

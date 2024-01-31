@@ -54,6 +54,7 @@ from django.db.models import Prefetch
 import requests
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string, get_template
+from sms import send_sms
 # from geopy.geocoders import Nominatim
 
 
@@ -246,7 +247,7 @@ def create_user(request):
                 return Response({'error': 'User with this email already exists.'}, status=status.HTTP_400_BAD_REQUEST)
 
         elif phone_number:
-            # Check if a user with the provided phone number already exists
+            
             if User.objects.filter(phone_number=phone_number).exists():
                 return Response({'error': 'User with this phone number already exists.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -270,35 +271,29 @@ def create_user(request):
                 user.otp = otp_code
                 user.otp_time = datetime.now()
                 user.save()
-                # Send the OTP to the user via email
-                # send_mail(
-                #     '2geda OTP Verification Code',
-                #     f'Hi, {user.username}, Your OTP code is: {otp_code}',
-                #     '2gedafullstack@gmail.com',
-                #     [user.email],  # Replace with the user's email field
-                #     fail_silently=False,
-                # )
 
-                # # Send the OTP to the user's phone number via Twilio
-                # client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-                # message = client.messages.create(
-                #     body=f'Hi, {user.username}, Your OTP code is: {otp_code}',
-                #     from_=TWILIO_PHONE_NUMBER,
-                #     to=phone_number,  # Replace with the user's phone_number field
-                # )
+                if phone_number:
+                    try:
+                        send_sms(
+                            
+                            f'your 2geda  OTP is {otp_code}, DO NOT share your OTP',
+                            settings.TWILIO_PHONE_NUMBER,
+                            [f'{phone_number}'],
+                            fail_silently=False
+                        )
+                    except:
+                        pass
+
+                if email:
+                    sendmail(subject="OTP VERIFICATION", message= otp_code, user_email=user.email, username=user.username)
                 
-                sendmail(subject="OTP VERIFICATION", message= otp_code, user_email=user.email, username=user.username)
                 response_data = serializer.data
                 response_data['token'] = token_key
 
                 ip = get_country(request)
 
                 return Response(response_data, status=status.HTTP_201_CREATED)
-            # except IntegrityError as e:
-            #     print(e)  # Add this line to print the IntegrityError message
-            #     return Response({'error': 'Something Went Wrong'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
-            
+           
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -371,18 +366,47 @@ def resend_otp(request):
 @csrf_exempt
 def login_view(request):
     if request.method == 'POST':
-        username = request.data['username']
+        email = None
+        phone_number = None
+        username = None
+
+        if "email" in request.data:
+            email = request.data['email']
+        if "phone_number" in request.data:
+            phone_number = request.data["phone_number"]
+        if "username" in request.data:
+            username = request.data['username']
+
         password = request.data['password']
 
         print(username)
         print(password)
+        print(f"userrrrrrrr {User.objects.filter(username=username)}" )
 
-        if not username or not password:
-            return JsonResponse({'error': 'Both username and password are required.'}, status=400)
-        
-        if not User.objects.filter(username=username).exists():
-             return JsonResponse({'error': 'user does not exist'}, status=400)
-        
+        if username:
+            if not username or not password:
+                return JsonResponse({'error': 'Both username and password are required.'}, status=400)
+            if not User.objects.filter(username=username).exists():
+                return JsonResponse({'error': 'user does not exist'}, status=400)
+        if email:
+            if not email or not password:
+                return JsonResponse({'error': 'Both Email and password are required.'}, status=400)
+            print(email)
+            if not User.objects.filter(email=email).exists():
+                return JsonResponse({'error': 'user does not exist'}, status=400)
+            else:
+                user = User.objects.filter(email=email).first()
+                username = user.username
+
+        if phone_number:
+            if not phone_number or not password:
+                return JsonResponse({'error': 'phone number and password are required.'}, status=400)
+            if not User.objects.filter(phone_number=phone_number).exists():
+                return JsonResponse({'error': 'user does not exist'}, status=400)
+            else:
+                user = User.objects.filter(phone_number=phone_number).first()
+                username = user.username
+
         user = authenticate(request, username=username, password=password)
 
         if user is not None:
@@ -407,18 +431,60 @@ class LoginAPI(APIView):
         username = request.data["username"]  
         password = request.data["password"] 
 
-        if not username or not password:
-            return JsonResponse({'error': 'Both username and password are required.'}, status=400)
+        if  "username" in request.data:
+            username = request.data["username"]  
+            password = request.data["password"] 
 
-        user = authenticate(request, username=username, password=password)
+            print(username)
+            print(password)
 
-        if user is not None:
-            # Log the user in and return a success response
-            login(request, user)
-            return Response({'message': 'Login successful', 'token': user.auth_token.key})
-        else:
-            # Authentication failed; return an error response
-            return Response({'error': 'Invalid login credentials'}, status=401)
+            if not username or not password:
+                return JsonResponse({'error': 'Both username and password are required.'}, status=400)
+            
+            print(f"userrrrrrrr {User.objects.filter(username=username)}" )
+            if not User.objects.filter(username=username).exists():
+                return JsonResponse({'error': 'user does not exist'}, status=400)
+            
+            user = authenticate(request, username=username, password=password)
+
+            if user is not None:
+                #not username or not password:
+                return JsonResponse({'error': 'Both username and password are required.'}, status=400)
+
+            user = authenticate(request, username=username, password=password)
+
+            if user is not None:
+                # Log the user in and return a success response
+                login(request, user)
+                return Response({'message': 'Login successful', 'token': user.auth_token.key})
+            else:
+                # Authentication failed; return an error response
+                return Response({'error': 'Invalid login credentials'}, status=401)
+        
+        elif "phone_number" in request.data:
+            phone_number = request.data["phone_number"]  
+            password = request.data["password"] 
+
+            print(username)
+            print(password)
+
+            if not username or not password:
+                return JsonResponse({'error': 'Both username and password are required.'}, status=400)
+            
+            if not User.objects.filter(phone_number=phone_number).exists():
+                return JsonResponse({'error': 'user does not exist'}, status=400)
+            
+            username = User.objects.get(phone_number=phone_number)
+            user = authenticate(request, username=username, password=password)
+            
+            if user is not None:
+                # Log the user in and return a success response
+                login(request, user)
+                return Response({'message': 'Login successful', 'token': user.auth_token.key})
+            else:
+                # Authentication failed; return an error response
+                return Response({'error': 'Invalid login credentials'}, status=401)
+
 
 
 
@@ -1663,3 +1729,21 @@ def query_test(request):
 
     context = {'post': serialized_data}
     return render(request, 'querytest.html', context)
+
+
+
+class SendSMS(APIView):
+     
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, format=None):
+        
+        send_sms(
+            'Here is the message',
+            settings.TWILIO_PHONE_NUMBER,
+            ['+2347062198687'],
+            fail_silently=False
+        )
+
+        return Response({"response": "done"}, status=200)
+         

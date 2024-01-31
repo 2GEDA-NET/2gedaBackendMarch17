@@ -75,8 +75,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         # Debugging statement: Print the email and phone number
         print(f"Creating user with Email: {email}, Phone Number: {phone_number}")
 
-        # Create and save the User instance
-        user = User.objects.create_user(
+        
+        user = User.objects.create(
             username = username,
             email=email,
             phone_number=phone_number,

@@ -22,7 +22,7 @@ class PostMediaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MediaPost
-        fields = ["user", "media"]
+        fields = ["user", "media","media_type"]
 
 
 class ReactionSerializer(serializers.ModelSerializer):

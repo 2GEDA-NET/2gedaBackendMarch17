@@ -31,7 +31,7 @@ class MediaPost(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     post = models.ForeignKey('Post', on_delete=models.CASCADE, null=True, blank=True)
     media  = models.FileField(upload_to='post_files/', blank=True, null=True)
-
+    media_type = models.CharField(max_length=256, null=True, blank=True, choices=FILE_CHOICES)
 
 class HashTagsPost(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)

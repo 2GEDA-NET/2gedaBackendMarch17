@@ -35,7 +35,7 @@ urlpatterns = [
 
     path('sticking-post-feed/', post_feed, name='post_feed'),
     path('all-post/', Get_All.as_view()),
-    path('feed-post/', Get_All.as_view()),
+    path('feed-post/', Get_All.as_view()),     
     path('some-post/<int:post_id>/', retrieve_post, name='retrieve-post'),
     path('post/<int:post_id>/', update_post, name='update-post'),
     path('post/<int:post_id>/', delete_post, name='delete-post'),
