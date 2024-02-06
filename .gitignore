@@ -1,3 +1,8 @@
 ./2gedaenv
+.vscode
 ./.vscode
 .env
+.env.save
+venv
+static
+__pycache__/
