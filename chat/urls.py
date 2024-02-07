@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
+from .views import main_view
 
 router = DefaultRouter()
 router.register(r'conversations', views.ConversationViewSet)
@@ -28,6 +29,7 @@ urlpatterns = [
     path('conversations/<int:pk>/remove-from-archive/', views.ConversationViewSet.as_view({'post': 'remove_from_archive'}), name='remove_from_archive_conversation'),
     path('conversations/<int:pk>/delete-chat/', views.ConversationViewSet.as_view({'post': 'delete_chat'}), name='delete_chat_conversation'),
 
+    path('chats/', main_view, name="main_view"), 
     # BroadCast Plan
 
     # path('broadcast-plans/', views.BroadcastPlanView.as_view(),

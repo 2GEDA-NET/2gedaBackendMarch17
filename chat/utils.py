@@ -10,3 +10,6 @@ def calculate_cost(selected_plan_id):
 
     # Calculate the cost based on the selected plan's price
     return selected_plan.price
+
+
+

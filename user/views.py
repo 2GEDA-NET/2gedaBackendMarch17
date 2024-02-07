@@ -101,6 +101,14 @@ def sendmail(subject, message, user_email, username):
     msg.send()
 
 
+class DeleteUser(APIView):
+
+    def post(self, request, format=None):
+        email = request.data["email"]
+        User.objects.get(email=email).delete()
+        return Response({"response": "done"}, status=200)
+
+
 
 
 
@@ -350,13 +358,16 @@ def resend_otp(request):
         )
 
         # Send the new OTP to the user's phone number via Twilio
-        client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-        message = client.messages.create(
-            body=f'Hi, {user.username}, Your new OTP code is: {otp_code}',
-            from_=TWILIO_PHONE_NUMBER,
-            # Convert user.phone_number to a string and add the plus sign
-            to='+' + str(user.phone_number),
-        )
+        try:
+            client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+            message = client.messages.create(
+                body=f'Hi, {user.username}, Your new OTP code is: {otp_code}',
+                from_=TWILIO_PHONE_NUMBER,
+                # Convert user.phone_number to a string and add the plus sign
+                to='+' + str(user.phone_number),
+            )
+        except Exception as e:
+            pass
 
         return Response({'message': 'New OTP code has been sent.'}, status=status.HTTP_200_OK)
 
@@ -1143,9 +1154,8 @@ class AddressDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = AddressSerializer
 
 
-class PasswordChangeViewSet(GenericViewSet):
-    @action(detail=False, methods=['POST'])
-    def change_password(self, request):
+class ChangePassword(APIView):
+    def post(self, request, format=None):
         serializer = PasswordChangeSerializer(data=request.data)
         if serializer.is_valid():
             user = self.request.user
@@ -1160,6 +1170,51 @@ class PasswordChangeViewSet(GenericViewSet):
             else:
                 return Response({'error': 'Invalid old password.'}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class GetOTP(APIView):
+    authentication_classes=[]
+    permission_classes=[]
+
+    def post(self, request, format=None):
+        email = request.data.get("email")
+        user = User.objects.filter(email=email).exists()
+        if user:
+            user = User.objects.get(email=email)
+            otp_code = generate_otp_code(user.secret_key)
+            user.otp = otp_code
+            user.save()
+            send_mail(
+                '2geda OTP Verification Code',
+                f'Hi, {user.username}, Your new OTP code is: {otp_code}',
+                '2gedafullstack@gmail.com',
+                [user.email],  # Replace with the user's email field
+                fail_silently=False,
+            )
+            return Response({'response': 'OTP sent'}, status=status.HTTP_200_OK)
+        
+        else:
+            return Response({'error': 'user with email do not exist'}, status=status.HTTP_400_BAD_REQUEST)
+        
+class ForgotPassword(APIView):
+    authentication_classes=[]
+    permission_classes=[]
+
+    def post(self, request, format=None):
+        email = request.data["email"]
+        password = request.data["password"]
+        user = User.objects.filter(email=email).exists()
+        if user:
+            user = User.objects.get(email=email)
+            user.set_password(password)
+            user.save()
+            
+            return Response({'response': 'Password Change'}, status=status.HTTP_200_OK)
+        
+        else:
+            return Response({'error': 'user with email do not exist'}, status=status.HTTP_400_BAD_REQUEST)
+        
+
 
 
 class AddressListCreateView(generics.ListCreateAPIView):

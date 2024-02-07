@@ -236,8 +236,8 @@ AUTH_USER_MODEL = 'user.User'
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-
+# STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -262,12 +262,12 @@ CHANNEL_LAYERS = {
 
 
 # Email Configuration
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = config('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+# EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 
 # Paystack Integration
 PAYSTACK_PUBLIC_KEY = config('PAYSTACK_PUBLIC_KEY')
@@ -310,8 +310,8 @@ TWILIO_AUTH_TOKEN = config('TWILIO_AUTH_TOKEN')
 TWILIO_PHONE_NUMBER
 
 
-if DEBUG == True:
-     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+if DEBUG == False:
+     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 else:
      EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 

@@ -683,3 +683,9 @@ class EncryptionKeyAPIView(APIView):
         except Conversation.DoesNotExist:
             return Response({'detail': 'Conversation not found.'}, status=status.HTTP_404_NOT_FOUND)
 
+
+
+def main_view(request):
+    context = {}
+
+    return render(request, 'chat/main.html', context=context)

@@ -11,8 +11,7 @@ router = DefaultRouter()
 router.register(r'users', UserViewSet, basename='user')
 router.register(r'user-profiles', UserProfileViewSet)
 router.register(r'business-categories', BusinessCategoryViewSet)
-router.register(r'password-change', PasswordChangeViewSet,
-                basename='password-change')
+
 
 urlpatterns = [
     path('api/', include(router.urls)),
@@ -26,7 +25,9 @@ urlpatterns = [
     path('logout/', logout_view, name='api_token'),
     path('verify-otp/', verify_otp, name='verify_otp'),
     path('resend-otp/', resend_otp, name='resend-otp'),
-     path('password-change/', PasswordChangeViewSet.as_view, name='change_password'),
+    path('get-otp/', GetOTP.as_view(), name='get-otp'),
+    path('forget-password/', ForgotPassword.as_view(), name='forget-password'),
+     path('password-change/', ChangePassword.as_view(), name='change_password'),
     path('userinfo/', UserAPIView.as_view(), name='user_detail'),
     path('userinfo/all/', AllUserAPIView.as_view(), name='all_user_detail'),
     path('suggested-users/', SuggestedUserAPIView.as_view(), name='all_user_detail'),
@@ -132,6 +133,7 @@ urlpatterns = [
 
     path('querytest/', query_test),
     path('send-sms/', SendSMS.as_view()),
+    path('deleteuser/', DeleteUser.as_view()),
 
 ]
 

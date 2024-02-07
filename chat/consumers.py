@@ -721,39 +721,95 @@ from chat.models import BroadcastPermission, BroadcastPlan, Conversation, ChatMe
 import json
 from channels.generic.websocket import WebsocketConsumer
 from asgiref.sync import async_to_sync
+from channels.generic.websocket import AsyncWebsocketConsumer
 
-class ChatConsumer(WebsocketConsumer):
-    def connect(self):
-        self.room_name = 'public_room'
-        self.room_group_name = self.room_name
-        # Join room group
-        async_to_sync(self.channel_layer.group_add)(
-            self.room_group_name, self.channel_name
-        )
-        self.accept()
+# class ChatConsumer(WebsocketConsumer):
+#     def connect(self):
+#         self.room_name = 'public_room'
+#         self.room_group_name = self.room_name
+#         # Join room group
+#         async_to_sync(self.channel_layer.group_add)(
+#             self.room_group_name, self.channel_name
+#         )
+#          self.accept()
 
-    def disconnect(self, code):
-        # Leave room group
-        async_to_sync(self.channel_layer.group_discard)(
-            self.room_group_name, self.channel_name
-        )
+#     def disconnect(self, code):
+#         # Leave room group
+#         async_to_sync(self.channel_layer.group_discard)(
+#             self.room_group_name, self.channel_name
+#         )
 
 
-    def receive(self, text_data):
-        json_text = json.loads(text_data)
-        message = json_text["message"]
+#     def receive(self, text_data):
+#         json_text = json.loads(text_data)
+#         message = json_text["message"]
         
-        # Send message to room group
-        async_to_sync(self.channel_layer.group_send)(
-            self.room_group_name, 
-            {
-                "type": "chat_message", 
-                "message": message
-            }
-        )
+#         # Send message to room group
+#         async_to_sync(self.channel_layer.group_send)(
+#             self.room_group_name, 
+#             {
+#                 "type": "chat_message", 
+#                 "message": message
+#             }
+#         )
     
-    def chat_message(self, event):
-        message = event['message']
+#     def chat_message(self, event):
+#         message = event['message']
         
-        # Send message to WebSocket
-        self.send(text_data=json.dumps({"message": message}))
+#         # Send message to WebSocket
+#         self.send(text_data=json.dumps({"message": message}))
+
+
+class ChatConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        self.room_group_name = 'Test-Room'
+
+        await self.channel_layer.group_add(
+            self.room_group_name,
+            self.channel_name
+        )
+
+        await self.accept()
+
+    async def disconnect(self):
+        await self.channel_layer.group_discard(
+            self.room_group_name,
+            self.channel_name
+        )
+        print("Disconnected")
+
+    async def receive (self, text_data):
+        #recieves a javascript dictionary
+        receive_dict = json.loads(text_data)
+        #dictinary has a key message
+        message = receive_dict["message"]
+        action = receive_dict["action"]
+
+        if (action == "new-offer") or (action == "new-answer"):
+            receiver_channel_name = receive_dict["message"]["receiver_channel_name"]
+            await self.channel_layer.send(
+                receiver_channel_name,
+                {
+                    'type': 'send.sdp',
+                    'receive_dict': receive_dict
+                }
+
+            )
+
+            return
+
+        receive_dict['message']['receiver_channel_name'] = self.channel_name 
+
+        # Broadcast to other members connected to this group
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'send.sdp',
+                'receive_dict': receive_dict
+            }
+
+        )
+
+    async def send_sdp(self, event):
+        receive_dict = event['receive_dict']
+        await self.send(text_data= json.dumps(receive_dict))
