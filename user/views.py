@@ -3,6 +3,7 @@ import json  # Add this import for JSON formatting
 import time  # Import the time module
 from django.db.models import *
 from django.db.models import Q
+
 # from otp.models import Device
 # from otp.models import TOTPDevice
 from twilio.rest import Client  # Import the Twilio client
@@ -55,15 +56,17 @@ TWILIO_PHONE_NUMBER = settings.TWILIO_PHONE_NUMBER
 
 
 credentials = service_account.Credentials.from_service_account_file(
-    'geda-403314-9575a2d9bab8.json', scopes=['https://www.googleapis.com/auth/gmail.send'])
+    "geda-403314-9575a2d9bab8.json",
+    scopes=["https://www.googleapis.com/auth/gmail.send"],
+)
 email = "2gedafullstack@gmail.com"
 
 
 def send_email(subject, message, to_email):
     credentials = credentials.with_subject(email)
-    message = create_message("2gedafullstack@gmail.com",
-                             to_email, subject, message)
+    message = create_message("2gedafullstack@gmail.com", to_email, subject, message)
     send_message(credentials, message)
+
 
 # Within your view function
 
@@ -80,7 +83,7 @@ def generate_otp_code(secret_key, length=5):
 
 
 # Authentication APIs
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([AllowAny])
 def get_auth_token(request):
     # Retrieve the user from the request or any other authentication mechanism
@@ -92,41 +95,49 @@ def get_auth_token(request):
     # Retrieve the token value
     token_value = token.key
 
-    return Response({'token': token_value})
+    return Response({"token": token_value})
 
 
 def get_csrf_token(request):
     token = csrf.get_token(request)
-    return JsonResponse({'csrfToken': token})
+    return JsonResponse({"csrfToken": token})
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @csrf_exempt
 @permission_classes([AllowAny])
 def create_user(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         data = request.data
-        email = data.get('email')
-        phone_number = data.get('phone_number')
+        email = data.get("email")
+        phone_number = data.get("phone_number")
 
         # Debugging statement: Print the email and phone number
         print(f"Email: {email}, Phone Number: {phone_number}")
 
         if not email and not phone_number:
-            return Response({'error': 'Either email or phone number must be provided.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Either email or phone number must be provided."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        serializer = UserRegistrationSerializer(
-            data=data, context={'request': request})
+        serializer = UserRegistrationSerializer(data=data, context={"request": request})
 
         if email:
             # Check if a user with the provided email already exists
             if User.objects.filter(email=email).exists():
-                return Response({'error': 'User with this email already exists.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "User with this email already exists."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         elif phone_number:
             # Check if a user with the provided phone number already exists
             if User.objects.filter(phone_number=phone_number).exists():
-                return Response({'error': 'User with this phone number already exists.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "User with this phone number already exists."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         if serializer.is_valid():
             try:
@@ -134,8 +145,7 @@ def create_user(request):
 
                 # secret_key = secrets.token_urlsafe(16)
                 # Generate a random 16-character secret key and encode it in Base32
-                secret_key = base64.b32encode(
-                    secrets.token_bytes(10)).decode('utf-8')
+                secret_key = base64.b32encode(secrets.token_bytes(10)).decode("utf-8")
                 user.secret_key = secret_key
                 user.save()
 
@@ -149,9 +159,9 @@ def create_user(request):
                 user.save()
                 # Send the OTP to the user via email
                 send_mail(
-                    '2geda OTP Verification Code',
-                    f'Hi, {user.username}, Your OTP code is: {otp_code}',
-                    '2gedafullstack@gmail.com',
+                    "2geda OTP Verification Code",
+                    f"Hi, {user.username}, Your OTP code is: {otp_code}",
+                    "2gedafullstack@gmail.com",
                     [user.email],  # Replace with the user's email field
                     fail_silently=False,
                 )
@@ -159,31 +169,36 @@ def create_user(request):
                 # Send the OTP to the user's phone number via Twilio
                 client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
                 message = client.messages.create(
-                    body=f'Hi, {user.username}, Your OTP code is: {otp_code}',
+                    body=f"Hi, {user.username}, Your OTP code is: {otp_code}",
                     from_=TWILIO_PHONE_NUMBER,
                     to=phone_number,  # Replace with the user's phone_number field
                 )
 
                 response_data = serializer.data
-                response_data['token'] = token_key
+                response_data["token"] = token_key
                 return Response(response_data, status=status.HTTP_201_CREATED)
             except IntegrityError as e:
                 print(e)  # Add this line to print the IntegrityError message
-                return Response({'error': 'Account details already exist.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "Account details already exist."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 @authentication_classes([TokenAuthentication])
 def verify_otp(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         data = request.data
-        otp_code = data.get('otp_code')
+        otp_code = data.get("otp_code")
 
         if not otp_code:
-            return Response({'error': 'OTP code is required.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "OTP code is required."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Get the user's secret key from the authenticated user
         secret_key = request.user.secret_key
@@ -197,17 +212,21 @@ def verify_otp(request):
             request.user.is_verified = True
             request.user.otp_verified = True
             request.user.save()
-            return Response({'message': 'OTP code is valid.'}, status=status.HTTP_200_OK)
+            return Response(
+                {"message": "OTP code is valid."}, status=status.HTTP_200_OK
+            )
         else:
-            return Response({'error': 'Invalid OTP code.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Invalid OTP code."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 # Define your view for resending OTP
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])  # Use the appropriate permission class
 @authentication_classes([TokenAuthentication])
 def resend_otp(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         user = request.user
 
         # Generate a new OTP code using the user's secret key
@@ -218,9 +237,9 @@ def resend_otp(request):
 
         # Send the new OTP to the user via email
         send_mail(
-            '2geda OTP Verification Code',
-            f'Hi, {user.username}, Your new OTP code is: {otp_code}',
-            '2gedafullstack@gmail.com',
+            "2geda OTP Verification Code",
+            f"Hi, {user.username}, Your new OTP code is: {otp_code}",
+            "2gedafullstack@gmail.com",
             [user.email],  # Replace with the user's email field
             fail_silently=False,
         )
@@ -228,43 +247,49 @@ def resend_otp(request):
         # Send the new OTP to the user's phone number via Twilio
         client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
         message = client.messages.create(
-            body=f'Hi, {user.username}, Your new OTP code is: {otp_code}',
+            body=f"Hi, {user.username}, Your new OTP code is: {otp_code}",
             from_=TWILIO_PHONE_NUMBER,
             # Convert user.phone_number to a string and add the plus sign
-            to='+' + str(user.phone_number),
+            to="+" + str(user.phone_number),
         )
 
-        return Response({'message': 'New OTP code has been sent.'}, status=status.HTTP_200_OK)
+        return Response(
+            {"message": "New OTP code has been sent."}, status=status.HTTP_200_OK
+        )
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([AllowAny])
 @csrf_exempt
 def login_view(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
+    if request.method == "POST":
+        username = request.POST.get("username")
+        password = request.POST.get("password")
 
         print(username)
         print(password)
 
         if not username or not password:
-            return JsonResponse({'error': 'Both username and password are required.'}, status=400)
+            return JsonResponse(
+                {"error": "Both username and password are required."}, status=400
+            )
 
         user = authenticate(request, username=username, password=password)
 
         if user is not None:
             # Log the user in and return a success response
             login(request, user)
-            return JsonResponse({'message': 'Login successful', 'token': user.auth_token.key})
+            return JsonResponse(
+                {"message": "Login successful", "token": user.auth_token.key}
+            )
         else:
             # Authentication failed; return an error response
-            return JsonResponse({'error': 'Invalid login credentials'}, status=401)
+            return JsonResponse({"error": "Invalid login credentials"}, status=401)
 
-    return JsonResponse({'error': 'Invalid request method'}, status=400)
+    return JsonResponse({"error": "Invalid request method"}, status=400)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def logout_view(request):
     # Get the user's token
@@ -272,19 +297,21 @@ def logout_view(request):
     try:
         token = Token.objects.get(user=user)
         token.delete()  # Delete the token
-        return Response({'message': 'Logout successful.'}, status=status.HTTP_200_OK)
+        return Response({"message": "Logout successful."}, status=status.HTTP_200_OK)
     except Token.DoesNotExist:
-        return Response({'error': 'No token found for the user.'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"error": "No token found for the user."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
 
-@api_view(['PUT'])
+@api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def update_user_profile(request):
     user = request.user
 
-    if request.method == 'PUT':
-        serializer = UserProfileUpdateSerializer(
-            instance=user, data=request.data)
+    if request.method == "PUT":
+        serializer = UserProfileUpdateSerializer(instance=user, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response({"message": "User profile updated successfully"})
@@ -303,15 +330,17 @@ class UserProfileHasUpdatedProfileView(generics.GenericAPIView):
         return profile
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def delete_account(request):
     # Validate the request data using the serializer
     serializer = UserDeletionSerializer(data=request.data)
     if serializer.is_valid():
         # Authenticate the user based on the provided password
-        user = authenticate(username=request.user.username,
-                            password=serializer.validated_data['password'])
+        user = authenticate(
+            username=request.user.username,
+            password=serializer.validated_data["password"],
+        )
         if user is not None:
             # Logout the user to invalidate the current session
             request.auth.logout(request)
@@ -319,38 +348,56 @@ def delete_account(request):
             # Delete the user
             user.delete()
 
-            return Response({"message": "User deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+            return Response(
+                {"message": "User deleted successfully"},
+                status=status.HTTP_204_NO_CONTENT,
+            )
         else:
-            return Response({"message": "Invalid password"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"message": "Invalid password"}, status=status.HTTP_400_BAD_REQUEST
+            )
     else:
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated, IsAdminUser])
 def delete_user_by_username_or_id(request):
     # Validate the request data using the serializer
     serializer = UserDeletionSerializer(data=request.data)
     if serializer.is_valid():
-        username = serializer.validated_data.get('username')
-        user_id = serializer.validated_data.get('user_id')
+        username = serializer.validated_data.get("username")
+        user_id = serializer.validated_data.get("user_id")
 
         if username:
             try:
                 user = User.objects.get(username=username)
                 user.delete()
-                return Response({"message": "User deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+                return Response(
+                    {"message": "User deleted successfully"},
+                    status=status.HTTP_204_NO_CONTENT,
+                )
             except User.DoesNotExist:
-                return Response({"message": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+                return Response(
+                    {"message": "User not found"}, status=status.HTTP_404_NOT_FOUND
+                )
         elif user_id:
             try:
                 user = User.objects.get(pk=user_id)
                 user.delete()
-                return Response({"message": "User deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+                return Response(
+                    {"message": "User deleted successfully"},
+                    status=status.HTTP_204_NO_CONTENT,
+                )
             except User.DoesNotExist:
-                return Response({"message": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+                return Response(
+                    {"message": "User not found"}, status=status.HTTP_404_NOT_FOUND
+                )
         else:
-            return Response({"message": "Provide either 'username' or 'user_id' for deletion"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"message": "Provide either 'username' or 'user_id' for deletion"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
     else:
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -359,7 +406,7 @@ def delete_account_by_username(request, username):
     # Attempt to get the user by username
     user = get_object_or_404(User, username=username)
 
-    if request.method == 'POST':
+    if request.method == "POST":
         # Check if the request is a POST request to confirm the deletion
         user.delete()
         return JsonResponse({"message": "User deleted successfully."}, status=204)
@@ -367,7 +414,7 @@ def delete_account_by_username(request, username):
     # If it's not a POST request, return a message indicating how to delete the user
     return JsonResponse(
         {"message": "To delete this user, send a POST request to this endpoint."},
-        status=400
+        status=400,
     )
 
 
@@ -375,7 +422,7 @@ def delete_account_by_id(request, user_id):
     # Attempt to get the user by their ID
     user = get_object_or_404(User, pk=user_id)
 
-    if request.method == 'POST':
+    if request.method == "POST":
         # Check if the request is a POST request to confirm the deletion
         user.delete()
         return JsonResponse({"message": "User deleted successfully."}, status=204)
@@ -383,7 +430,7 @@ def delete_account_by_id(request, user_id):
     # If it's not a POST request, return a message indicating how to delete the user
     return JsonResponse(
         {"message": "To delete this user, send a POST request to this endpoint."},
-        status=400
+        status=400,
     )
 
 
@@ -391,32 +438,34 @@ def delete_account_by_id(request, user_id):
 
 
 # User List APIs
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def list_users(request):
     # Retrieve users sorted by date of creation
-    users = User.objects.all().order_by('date_joined')
+    users = User.objects.all().order_by("date_joined")
 
     user_data = []
     for user in users:
         user_profile = UserProfile.objects.filter(
-            user=user).first()  # Get the user's profile
+            user=user
+        ).first()  # Get the user's profile
 
         if user_profile:
             sticker_count = user_profile.stickers.count()
-            sticking_count = UserProfile.objects.filter(
-                stickers=user_profile).count()
+            sticking_count = UserProfile.objects.filter(stickers=user_profile).count()
         else:
             sticker_count = 0
             sticking_count = 0
 
-        user_data.append({
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'username': user.username,
-            'sticking_count': sticking_count,
-            'sticker_count': sticker_count,
-        })
+        user_data.append(
+            {
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "username": user.username,
+                "sticking_count": sticking_count,
+                "sticker_count": sticker_count,
+            }
+        )
 
     return Response(user_data, status=status.HTTP_200_OK)
 
@@ -426,17 +475,18 @@ class BusinessAccountRegistrationView(APIView):
         serializer = BusinessAccountRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             # Get the password from the serializer data
-            business_password = serializer.validated_data['business_password']
+            business_password = serializer.validated_data["business_password"]
             # Hash the password using make_password
             hashed_password = make_password(business_password)
             # Update the serializer data with the hashed password
-            serializer.validated_data['business_password'] = hashed_password
+            serializer.validated_data["business_password"] = hashed_password
 
             business_account = serializer.save()
             # Create a token for the user
             token, created = Token.objects.get_or_create(
-                user=business_account.profile.user)
-            return Response({'token': token.key}, status=status.HTTP_201_CREATED)
+                user=business_account.profile.user
+            )
+            return Response({"token": token.key}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -444,15 +494,18 @@ class BusinessAccountLoginView(APIView):
     def post(self, request):
         serializer = BusinessAccountLoginSerializer(data=request.data)
         if serializer.is_valid():
-            username = serializer.validated_data['business_name']
-            password = serializer.validated_data['business_password']
-            user = BusinessAccountAuthBackend().authenticate(request, username=username,
-                                                             password=password)  # Use authenticate method
+            username = serializer.validated_data["business_name"]
+            password = serializer.validated_data["business_password"]
+            user = BusinessAccountAuthBackend().authenticate(
+                request, username=username, password=password
+            )  # Use authenticate method
             if user is not None:
                 login(request, user)
                 token, created = Token.objects.get_or_create(user=user)
-                return Response({'token': token.key}, status=status.HTTP_200_OK)
-        return Response({'detail': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response({"token": token.key}, status=status.HTTP_200_OK)
+        return Response(
+            {"detail": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
+        )
 
 
 class ManagedBusinessAccountsView(generics.ListAPIView):
@@ -473,13 +526,17 @@ class BusinessAccountChangePasswordView(UpdateAPIView):
 
     def update(self, request, *args, **kwargs):
         serializer = self.get_serializer(
-            data=request.data, context={'request': request})
+            data=request.data, context={"request": request}
+        )
         if serializer.is_valid():
             user = self.get_object()
-            new_password = serializer.validated_data['new_password']
+            new_password = serializer.validated_data["new_password"]
             user.businessaccount.business_password = new_password
             user.businessaccount.save()
-            return Response({'detail': 'Password has been changed successfully.'}, status=status.HTTP_200_OK)
+            return Response(
+                {"detail": "Password has been changed successfully."},
+                status=status.HTTP_200_OK,
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -490,11 +547,11 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
 
     def create(self, request, *args, **kwargs):
-        location_data = request.data.get('location')
+        location_data = request.data.get("location")
         if location_data:
             # Assuming location_data is a dictionary with 'latitude' and 'longitude' keys
-            latitude = location_data.get('latitude')
-            longitude = location_data.get('longitude')
+            latitude = location_data.get("latitude")
+            longitude = location_data.get("longitude")
 
             # Create or update user location
             user = self.perform_create(serializer)
@@ -506,14 +563,16 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
 
 
 # End of User details APIs
 
 
 # Sticking APIs
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def stick_user(request, user_id):
     user = request.user.userprofile
@@ -526,25 +585,29 @@ def stick_user(request, user_id):
         if user.sticking.filter(pk=user_id).exists():
             user.sticking.remove(target_user)
             # If unsticking, remove the corresponding Participant record
-            Participant.objects.filter(
-                user=user.user, sticking_to=target_user).delete()
+            Participant.objects.filter(user=user.user, sticking_to=target_user).delete()
             # Send an unstick notification
-            send_notification(target_user.user,
-                              f"You were unsticked by {user.user.username}")
+            send_notification(
+                target_user.user, f"You were unsticked by {user.user.username}"
+            )
             return Response({"message": f"You unsticked {target_user.user.username}"})
         else:
             user.sticking.add(target_user)
             # If sticking, create a Participant record
             Participant.objects.create(user=user.user, sticking_to=target_user)
             # Send a stick notification
-            send_notification(target_user.user,
-                              f"You were sticked by {user.user.username}")
+            send_notification(
+                target_user.user, f"You were sticked by {user.user.username}"
+            )
             return Response({"message": f"You sticked {target_user.user.username}"})
 
-    return Response({"message": "You cannot stick/unstick yourself"}, status=status.HTTP_400_BAD_REQUEST)
+    return Response(
+        {"message": "You cannot stick/unstick yourself"},
+        status=status.HTTP_400_BAD_REQUEST,
+    )
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def list_stickers(request, user_id):
     try:
@@ -557,7 +620,7 @@ def list_stickers(request, user_id):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def list_sticking(request, user_id):
     try:
@@ -570,7 +633,7 @@ def list_sticking(request, user_id):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def my_sticking(request):
     user = request.user
@@ -579,20 +642,22 @@ def my_sticking(request):
         sticking = user_profile.sticking.all()
         sticking_data = [
             {
-                'username': profile.user.username,
-                'first_name': profile.user.first_name,
-                'last_name': profile.user.last_name,
-                'sticking_count': profile.sticking.count(),
-                'sticker_count': profile.stickers.count()
+                "username": profile.user.username,
+                "first_name": profile.user.first_name,
+                "last_name": profile.user.last_name,
+                "sticking_count": profile.sticking.count(),
+                "sticker_count": profile.stickers.count(),
             }
             for profile in sticking
         ]
         return Response(sticking_data, status=status.HTTP_200_OK)
     except UserProfile.DoesNotExist:
-        return Response({"message": "User profile not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"message": "User profile not found"}, status=status.HTTP_404_NOT_FOUND
+        )
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def my_stickers(request):
     user = request.user
@@ -601,25 +666,29 @@ def my_stickers(request):
         stickers = user_profile.stickers.all()
         sticker_data = [
             {
-                'username': profile.user.username,
-                'first_name': profile.user.first_name,
-                'last_name': profile.user.last_name,
-                'sticking_count': profile.sticking.count(),
-                'sticker_count': profile.stickers.count()
+                "username": profile.user.username,
+                "first_name": profile.user.first_name,
+                "last_name": profile.user.last_name,
+                "sticking_count": profile.sticking.count(),
+                "sticker_count": profile.stickers.count(),
             }
             for profile in stickers
         ]
         return Response(sticker_data, status=status.HTTP_200_OK)
     except UserProfile.DoesNotExist:
-        return Response({"message": "User profile not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"message": "User profile not found"}, status=status.HTTP_404_NOT_FOUND
+        )
 
 
 # End of sticking APIs
+
 
 class UserAPIView(RetrieveAPIView):
     """
     Get user details
     """
+
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (permissions.IsAuthenticated,)
@@ -630,20 +699,24 @@ class UserAPIView(RetrieveAPIView):
 
 # Report Users API
 
-@api_view(['POST'])
+
+@api_view(["POST"])
 @csrf_exempt
 @permission_classes([AllowAny])
 def report_user(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         serializer = ReportUserSerializer(
-            data=request.data, context={'request': request})
+            data=request.data, context={"request": request}
+        )
 
         if serializer.is_valid():
             report = serializer.save()
             response_data = serializer.data
             return Response(response_data, status=status.HTTP_201_CREATED)
         else:
-            return Response({'error': 'Report not successful'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Report not successful"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class ReportUserViewSet(RetrieveAPIView):
@@ -651,7 +724,8 @@ class ReportUserViewSet(RetrieveAPIView):
     authentication_classes = (TokenAuthentication,)
     queryset = ReportedUser.objects.all()
     serializer_class = ReportedUserSerializer
-    lookup_field = 'user_id'
+    lookup_field = "user_id"
+
 
 # End of report users
 
@@ -672,34 +746,32 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         print(self.request.data)
 
         # Update the first name and last name fields
-        user_profile.user.first_name = self.request.data.get('user')[
-            'first_name']
-        user_profile.user.last_name = self.request.data.get('user')[
-            'last_name']
-        date_of_birth = self.request.data.get('date_of_birth')
-        user_profile.work = self.request.data.get('work')
-        user_profile.gender = self.request.data.get('identity')
-        user_profile.religion = self.request.data.get('religion')
-        user_profile.custom_gender = self.request.data.get('custom_gender')
-        profile_image_data = self.request.FILES['profile_image']
-        cover_image_data = self.request.FILES['cover_image']
+        user_profile.user.first_name = self.request.data.get("user")["first_name"]
+        user_profile.user.last_name = self.request.data.get("user")["last_name"]
+        date_of_birth = self.request.data.get("date_of_birth")
+        user_profile.work = self.request.data.get("work")
+        user_profile.gender = self.request.data.get("identity")
+        user_profile.religion = self.request.data.get("religion")
+        user_profile.custom_gender = self.request.data.get("custom_gender")
+        profile_image_data = self.request.FILES["profile_image"]
+        cover_image_data = self.request.FILES["cover_image"]
 
         print(cover_image_data)
         print(profile_image_data)
 
         if user_profile.gender == 1 or user_profile.gender == "Male":
-            user_profile.gender = 'Male'
+            user_profile.gender = "Male"
         elif user_profile.gender == 2 or user_profile.gender == "Female":
-            user_profile.gender = 'Female'
+            user_profile.gender = "Female"
         else:
-            user_profile.gender = 'Rather not say'
+            user_profile.gender = "Rather not say"
 
-        if user_profile.religion == 1 or user_profile.religion == 'Christain':
-            user_profile.religion = 'Christain'
-        elif user_profile.religion == 2 or user_profile.religion == 'Muslim':
-            user_profile.religion = 'Muslim'
+        if user_profile.religion == 1 or user_profile.religion == "Christain":
+            user_profile.religion = "Christain"
+        elif user_profile.religion == 2 or user_profile.religion == "Muslim":
+            user_profile.religion = "Muslim"
         else:
-            user_profile.religion = 'Indegineous'
+            user_profile.religion = "Indegineous"
 
         if profile_image_data:
             # Assuming the field name in the serializer is 'profile_image'
@@ -729,11 +801,15 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         if date_of_birth:
             try:
                 formatted_date = datetime.datetime.strptime(
-                    date_of_birth, '%Y-%m-%d').date()
+                    date_of_birth, "%Y-%m-%d"
+                ).date()
                 user_profile.date_of_birth = formatted_date
                 print(f"Parsed Date: {formatted_date}")
             except ValueError:
-                return Response({'error': 'Invalid date format. Please use YYYY-MM-DD.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "Invalid date format. Please use YYYY-MM-DD."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         # Save the user_profile object
         user_profile.save()
@@ -741,7 +817,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         user_profile.media.save()
         print("Profile Saved")
 
-        return Response({'message': 'Profile updated successfully'})
+        return Response({"message": "Profile updated successfully"})
 
 
 # Business APIs
@@ -752,42 +828,41 @@ class BusinessCategoryViewSet(viewsets.ModelViewSet):
     serializer_class = BusinessCategorySerializer
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def create_business_profile(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         # Automatically associate the user's profile with the request data
-        request.data['profile'] = request.user.userprofile.pk
+        request.data["profile"] = request.user.userprofile.pk
 
         serializer = BusinessAccountSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
 
             # Send a notification for profile creation
-            send_notification(
-                request.user, "Your business profile has been created.")
+            send_notification(request.user, "Your business profile has been created.")
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['PUT'])
+@api_view(["PUT"])
 def update_business_profile(request, pk):
     try:
         business_profile = BusinessAccountSerializer.objects.get(pk=pk)
     except BusinessAccountSerializer.DoesNotExist:
-        return Response({'detail': 'BusinessProfile not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"detail": "BusinessProfile not found"}, status=status.HTTP_404_NOT_FOUND
+        )
 
-    if request.method == 'PUT':
-        serializer = BusinessAccountSerializer(
-            business_profile, data=request.data)
+    if request.method == "PUT":
+        serializer = BusinessAccountSerializer(business_profile, data=request.data)
         if serializer.is_valid():
             serializer.save()
 
             # Send a notification for profile update
-            send_notification(
-                request.user, "Your business profile has been updated.")
+            send_notification(request.user, "Your business profile has been updated.")
 
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -834,6 +909,7 @@ class BusinessCategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = BusinessCategory.objects.all()
     serializer_class = BusinessCategorySerializer
 
+
 # End of Business APIs
 
 
@@ -852,21 +928,27 @@ class AddressDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class PasswordChangeViewSet(GenericViewSet):
-    @action(detail=False, methods=['POST'])
+    @action(detail=False, methods=["POST"])
     def change_password(self, request):
         serializer = PasswordChangeSerializer(data=request.data)
         if serializer.is_valid():
             user = self.request.user
-            old_password = serializer.validated_data['old_password']
-            new_password = serializer.validated_data['new_password']
+            old_password = serializer.validated_data["old_password"]
+            new_password = serializer.validated_data["new_password"]
 
             # Check if the old password matches the user's current password
             if user.check_password(old_password):
                 user.set_password(new_password)
                 user.save()
-                return Response({'message': 'Password changed successfully.'}, status=status.HTTP_200_OK)
+                return Response(
+                    {"message": "Password changed successfully."},
+                    status=status.HTTP_200_OK,
+                )
             else:
-                return Response({'error': 'Invalid old password.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "Invalid old password."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -892,19 +974,20 @@ class VerificationRetrieveView(RetrieveAPIView):
     queryset = Verification.objects.all()
     serializer_class = VerificationSerializer
 
+
 # Search User
 
 
 class UserSearchAPIView(APIView):
     def get(self, request):
-        query = request.query_params.get('query', '')
+        query = request.query_params.get("query", "")
 
         if query:
             # Perform a case-insensitive search across relevant fields in the database
             results = User.objects.filter(
-                Q(first_name__icontains=query) |
-                Q(last_name__icontains=query) |
-                Q(username__icontains=query)
+                Q(first_name__icontains=query)
+                | Q(last_name__icontains=query)
+                | Q(username__icontains=query)
             )
             serializer = UserSerializer(results, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -918,42 +1001,49 @@ def send_notification(user, message):
     notification.save()
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_notifications(request):
     user = request.user
-    notifications = Notification.objects.filter(
-        user=user, is_read=False).order_by('-created_at')
+    notifications = Notification.objects.filter(user=user, is_read=False).order_by(
+        "-created_at"
+    )
     serializer = NotificationSerializer(notifications, many=True)
     return Response(serializer.data)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def block_user(request):
     # Get the user who is doing the blocking
     blocker = request.user
 
     # Get the user who is being blocked (you can pass this user's ID or username in the request data)
-    blocked_user_id = request.data.get('blocked_user_id')
+    blocked_user_id = request.data.get("blocked_user_id")
 
     # Check if the block already exists
     existing_block = BlockedUser.objects.filter(
-        blocker=blocker, blocked_user__id=blocked_user_id).first()
+        blocker=blocker, blocked_user__id=blocked_user_id
+    ).first()
 
     if existing_block:
-        return Response({'detail': 'User is already blocked.'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"detail": "User is already blocked."}, status=status.HTTP_400_BAD_REQUEST
+        )
 
     # Create a new block
     serializer = BlockedUserSerializer(
-        data={'blocker': blocker.id, 'blocked_user': blocked_user_id})
+        data={"blocker": blocker.id, "blocked_user": blocked_user_id}
+    )
     if serializer.is_valid():
         serializer.save()
-        return Response({'detail': 'User blocked successfully.'}, status=status.HTTP_201_CREATED)
+        return Response(
+            {"detail": "User blocked successfully."}, status=status.HTTP_201_CREATED
+        )
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def list_blocked_users(request):
     # Get the authenticated user
@@ -993,20 +1083,26 @@ class SearchAPIView(generics.ListAPIView):
     serializer_class = GeneralSearchSerializer
 
     def get_queryset(self):
-        query = self.request.query_params.get('query', '')
+        query = self.request.query_params.get("query", "")
         # You can add more models to the search here using Q objects
         queryset1 = User.objects.filter(
-            Q(field1__icontains=query) | Q(field2__icontains=query))
+            Q(field1__icontains=query) | Q(field2__icontains=query)
+        )
         queryset2 = PostMedia.objects.filter(
-            Q(field3__icontains=query) | Q(field4__icontains=query))
+            Q(field3__icontains=query) | Q(field4__icontains=query)
+        )
         queryset3 = CommentMedia.objects.filter(
-            Q(field5__icontains=query) | Q(field6__icontains=query))
+            Q(field5__icontains=query) | Q(field6__icontains=query)
+        )
         queryset4 = BusinessAccount.objects.filter(
-            Q(field7__icontains=query) | Q(field8__icontains=query))
+            Q(field7__icontains=query) | Q(field8__icontains=query)
+        )
         queryset5 = BusinessDirectory.objects.filter(
-            Q(field9__icontains=query) | Q(field10__icontains=query))
+            Q(field9__icontains=query) | Q(field10__icontains=query)
+        )
         queryset6 = Address.objects.filter(
-            Q(field11__icontains=query) | Q(field12__icontains=query))
+            Q(field11__icontains=query) | Q(field12__icontains=query)
+        )
 
         # Combine the querysets
         # Add more as needed
@@ -1015,21 +1111,27 @@ class SearchAPIView(generics.ListAPIView):
         return queryset
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 def flag_user_profile(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         serializer = FlagUserProfileSerializer(data=request.data)
         if serializer.is_valid():
-            username = serializer.validated_data.get('username')
+            username = serializer.validated_data.get("username")
 
             try:
                 profile_to_flag = UserProfile.objects.get(username=username)
             except UserProfile.DoesNotExist:
-                return Response({'detail': 'User profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+                return Response(
+                    {"detail": "User profile not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
 
             # Flag the user's profile by setting the 'is_flagged' field to True
             profile_to_flag.is_flagged = True
             profile_to_flag.save()
 
-            return Response({'detail': 'User profile flagged successfully.'}, status=status.HTTP_200_OK)
+            return Response(
+                {"detail": "User profile flagged successfully."},
+                status=status.HTTP_200_OK,
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

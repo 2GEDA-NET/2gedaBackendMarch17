@@ -1,0 +1,29 @@
+# Git
+.git
+.gitignore
+.github/
+
+# Virtualenv
+venv/
+.venv/
+.env
+.env-sample
+
+# Python
+*.pyc
+__pycache__
+
+# Django
+*.log
+*.db
+*.sqlite3
+
+# Visual Studio Code
+.vscode/
+
+# Docker
+Dockerfile
+docker-compose.yaml
+
+# App
+README.md

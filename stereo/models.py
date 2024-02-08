@@ -5,10 +5,12 @@ from user.models import UserProfile
 
 
 class Library(models.Model):
-    profile = models.OneToOneField(to=UserProfile, verbose_name=_("User Profile"))
+    profile = models.OneToOneField(
+        to=UserProfile, on_delete=models.CASCADE, verbose_name=_("User Profile")
+    )
 
 
-class Artist(models.Artist):
+class Artist(models.Model):
     full_name = models.CharField(_("Name"))
     about = models.TextField(_("About"), blank=True, null=True)
     picture = models.ImageField(_("Picture"), blank=True, null=True)
@@ -27,7 +29,7 @@ class SongCategory(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_plural_name = "SongCategories"
+        verbose_name_plural = "SongCategories"
 
     def __str__(self) -> str:
         return self.name
@@ -36,22 +38,24 @@ class SongCategory(models.Model):
 class Song(models.Model):
     title = models.CharField(_("Song Title"), max_length=100)
     artist = models.ForeignKey(
-        to=Artist, verbose_name=_("Artist"), blank=True, null=True
+        to=Artist,
+        on_delete=models.SET_NULL,
+        verbose_name=_("Artist"),
+        blank=True,
+        null=True,
     )
     duration = models.CharField(_("Duration"), max_length=20, blank=True, null=True)
-    category = models.ManyToManyField(
-        to=SongCategory, verbose_name=_("Category"), blank=True, null=True
-    )
+    category = models.ManyToManyField(to=SongCategory, verbose_name=_("Category"))
     likes = models.PositiveIntegerField(_("Likes"), default=0)
     cover_image = models.ImageField(
         _("Cover Image"), upload_to="song-cover-images", blank=True, null=True
     )
-    song_file = models.FileField(
+    audio_file = models.FileField(
         _("Song File"), upload_to="songs", blank=True, null=True
     )
     is_downloaded = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    download_count = models.PositiveIntegerField(_("Download Count"), default=0)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
         return self.title
@@ -62,7 +66,13 @@ class Playlist(models.Model):
     description = models.CharField(
         _("Description"), max_length=1000, blank=True, null=True
     )
-    library = models.ForeignKey(to=Library, verbose_name=_("Library"))
+    library = models.ForeignKey(
+        to=Library,
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+        verbose_name=_("Library"),
+    )
     cover_image = models.ImageField(
         _("Cover Image"), upload_to="playlist-cover-images", blank=True, null=True
     )
@@ -88,7 +98,13 @@ class Album(models.Model):
     artist = models.ForeignKey(
         to=Artist, on_delete=models.SET_NULL, blank=True, null=True
     )
-    library = models.ForeignKey(to=Library, verbose_name=_("Library"))
+    library = models.ForeignKey(
+        to=Library,
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+        verbose_name=_("Library"),
+    )
     cover_image = models.ImageField(
         _("Cover Image"), upload_to="album-cover-images", blank=True, null=True
     )

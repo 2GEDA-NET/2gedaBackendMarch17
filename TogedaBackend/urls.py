@@ -15,7 +15,7 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import include, path
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -26,5 +26,5 @@ urlpatterns = [
     path("chat/", include("chat.urls")),
     path("business/", include("business.urls")),
     path("poll/", include("poll.urls")),
-    path("stereo/", include("stereo.urls")),
+    # path("stereo/", include("stereo.urls")),
 ]

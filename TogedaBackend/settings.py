@@ -10,11 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
+import os
 from pathlib import Path
-import os
-import os
-from decouple import config, Csv
 
+from decouple import Csv, config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,19 +21,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config("SECRET_KEY")
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", default=False, cast=bool)
 
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="", cast=Csv())
 
 CORS_ORIGIN_ALLOW_ALL = True
-# Application definition
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -70,19 +62,6 @@ INSTALLED_APPS = [
     "tv",
 ]
 
-
-# Add DRF authentication and permission classes
-REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        # 'rest_framework.authentication.BasicAuthentication',
-        "rest_framework.authentication.SessionAuthentication",
-        "rest_framework.authentication.TokenAuthentication",
-    ],
-    "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.IsAuthenticated",
-    ],
-}
-
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     # 'channels.middleware.WebSocketMiddleware',
@@ -97,28 +76,10 @@ MIDDLEWARE = [
     # 'rest_framework.authtoken.middleware.AuthenticationMiddleware',
 ]
 
-
-# ASGI_APPLICATION = 'TogedaBackend.routing.application'
-
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
-        },
-    },
-}
-
-
-AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",
-    "user.authentication_backends.BusinessAccountAuthBackend",
-    "user.authentication_backends.CustomAuthBackend",
-]
-
+WSGI_APPLICATION = "TogedaBackend.wsgi.application"
+ASGI_APPLICATION = "TogedaBackend.asgi.application"
 
 ROOT_URLCONF = "TogedaBackend.urls"
-
 
 TEMPLATES = [
     {
@@ -135,41 +96,6 @@ TEMPLATES = [
         },
     },
 ]
-
-WSGI_APPLICATION = "TogedaBackend.wsgi.application"
-ASGI_APPLICATION = "TogedaBackend.asgi.application"
-
-
-# Database
-# https://docs.djangoproject.com/en/4.1/ref/settings/#databases
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-#         # Other database settings...
-#     }
-# }
-
-
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("DATABASE_NAME"),
-        "USER": config("DATABASE_USER"),
-        "PASSWORD": config("DATABASE_PASSWORD"),
-        "HOST": config("DATABASE_HOST"),
-        "PORT": config("DATABASE_PORT", default="", cast=int),
-        "OPTIONS": {
-            "sslmode": "require",
-        },
-    },
-    "development": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": os.path.join(BASE_DIR, "development_db.sqlite3"),
-    },
-}
-
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
@@ -203,39 +129,69 @@ USE_TZ = True
 
 AUTH_USER_MODEL = "user.User"
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.1/howto/static-files/
-
-STATIC_URL = "/static/"
-STATIC_ROOT = os.path.join(BASE_DIR, "static")
-
-
-MEDIA_URL = "/media/"
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
-
-
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/4.1/howto/static-files/
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
-CHANNEL_LAYERS = {
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+# Database
+# https://docs.djangoproject.com/en/4.1/ref/settings/#databases
+DATABASES = {
     "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer",
-        # 'CONFIG': {
-        #     'hosts': [('127.0.0.1', 6379)],
-        # }
-    }
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": config("DATABASE_NAME"),
+        "USER": config("DATABASE_USER"),
+        "PASSWORD": config("DATABASE_PASSWORD"),
+        "HOST": config("DATABASE_HOST"),
+        "PORT": config("DATABASE_PORT", default="", cast=int),
+        "OPTIONS": {
+            "sslmode": "require",
+        },
+    },
 }
 
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "user.authentication_backends.BusinessAccountAuthBackend",
+    "user.authentication_backends.CustomAuthBackend",
+]
+
+# Add DRF authentication and permission classes
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        # 'rest_framework.authentication.BasicAuthentication',
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.TokenAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+}
+
+# Channel Layers Settings
+CHANNEL_LAYERS = {
+    "default": {
+        # "BACKEND": "channels.layers.InMemoryChannelLayer",
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
 
 # Email Configuration
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
+EMAIL_BACKEND = config("EMAIL_BACKEND")
+EMAIL_HOST = config("EMAIL_HOST")
+EMAIL_PORT = config("EMAIL_PORT", cast=int)
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", cast=bool)
 EMAIL_HOST_USER = config("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 
@@ -255,7 +211,7 @@ AWS_DEFAULT_ACL = config("AWS_DEFAULT_ACL")
 AWS_S3_VERITY = config("AWS_S3_VERITY", default=True, cast=bool)
 DEFAULT_FILE_STORAGE = config("DEFAULT_FILE_STORAGE")
 
-
+# Twilio Account configuration
 TWILIO_ACCOUNT_SID = config("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = config("TWILIO_AUTH_TOKEN")
 TWILIO_PHONE_NUMBER = config("TWILIO_PHONE_NUMBER")
