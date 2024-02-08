@@ -26,5 +26,5 @@ urlpatterns = [
     path("chat/", include("chat.urls")),
     path("business/", include("business.urls")),
     path("poll/", include("poll.urls")),
-    # path("stereo/", include("stereo.urls")),
+    path("stereo/", include("stereo.urls")),
 ]

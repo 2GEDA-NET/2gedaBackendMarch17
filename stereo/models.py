@@ -11,7 +11,7 @@ class Library(models.Model):
 
 
 class Artist(models.Model):
-    full_name = models.CharField(_("Name"))
+    full_name = models.CharField(_("Full Name"))
     about = models.TextField(_("About"), blank=True, null=True)
     picture = models.ImageField(_("Picture"), blank=True, null=True)
     stickers = models.PositiveIntegerField(_("Stickers"), default=0)
@@ -20,7 +20,7 @@ class Artist(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
-        return self.title
+        return self.full_name
 
 
 class SongCategory(models.Model):
@@ -114,3 +114,18 @@ class Album(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+
+class SearchSong(models.Model):
+    keyword = models.CharField(_("Search Keyword"), max_length=100)
+    profile = models.ForeignKey(
+        to=UserProfile, on_delete=models.CASCADE, blank=True, null=True
+    )
+    searched_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "SearchSong"
+        verbose_name_plural = "SearchSongs"
+
+    def __str__(self) -> str:
+        return self.keyword

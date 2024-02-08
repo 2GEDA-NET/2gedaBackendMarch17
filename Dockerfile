@@ -24,7 +24,7 @@ RUN python -m venv /py && \
     adduser \
         --disabled-password \
         --no-create-home \
-        soupe-user
+        togeda-user
 
 # Copy the rest of the working directory contents into the container at /app
 COPY . /app
@@ -33,4 +33,4 @@ COPY . /app
 ENV PATH="/py/bin:$PATH"
 
 # Set the user to use when running this image
-USER geda-user
+USER togeda-user
