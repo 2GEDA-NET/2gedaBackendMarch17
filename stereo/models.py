@@ -4,6 +4,19 @@ from django.utils.translation import gettext as _
 from user.models import UserProfile
 
 
+# class StereoAccount(models.Model):
+#     profile = models.OneToOneField(
+#         to=UserProfile,
+#         on_delete=models.CASCADE,
+#         verbose_name=_("User Profile"),
+#         related_name="stereo_account",
+#     )
+#     created_at = models.DateTimeField(auto_now_add=True)
+
+#     def __str__(self) -> str:
+#         return self.profile.user.email
+
+
 class Library(models.Model):
     profile = models.OneToOneField(
         to=UserProfile, on_delete=models.CASCADE, verbose_name=_("User Profile")
@@ -11,7 +24,12 @@ class Library(models.Model):
 
 
 class Artist(models.Model):
-    full_name = models.CharField(_("Full Name"))
+    profile = models.OneToOneField(
+        to=UserProfile, on_delete=models.CASCADE, verbose_name=_("User Profile")
+    )
+    artist_name = models.CharField(
+        _("Artist Name"), max_length=50, blank=True, null=True
+    )
     about = models.TextField(_("About"), blank=True, null=True)
     picture = models.ImageField(_("Picture"), blank=True, null=True)
     stickers = models.PositiveIntegerField(_("Stickers"), default=0)
@@ -20,7 +38,7 @@ class Artist(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
-        return self.full_name
+        return self.artist_name
 
 
 class SongCategory(models.Model):
@@ -35,6 +53,16 @@ class SongCategory(models.Model):
         return self.name
 
 
+class SongManager(models.Manager):
+    """Model manager for Song model"""
+
+    def search(self, query):
+        pass
+
+    def recent_uploads(self):
+        pass
+
+
 class Song(models.Model):
     title = models.CharField(_("Song Title"), max_length=100)
     artist = models.ForeignKey(
@@ -46,19 +74,51 @@ class Song(models.Model):
     )
     duration = models.CharField(_("Duration"), max_length=20, blank=True, null=True)
     category = models.ManyToManyField(to=SongCategory, verbose_name=_("Category"))
-    likes = models.PositiveIntegerField(_("Likes"), default=0)
     cover_image = models.ImageField(
         _("Cover Image"), upload_to="song-cover-images", blank=True, null=True
     )
     audio_file = models.FileField(
         _("Song File"), upload_to="songs", blank=True, null=True
     )
-    is_downloaded = models.BooleanField(default=False)
+    likes = models.ManyToManyField(
+        to=UserProfile, verbose_name=_("Downloads"), blank=True, null=True
+    )
+    downloads = models.ManyToManyField(
+        to=UserProfile, verbose_name=_("Downloads"), blank=True, null=True
+    )
+    plays = models.ManyToManyField(
+        to=UserProfile, verbose_name=_("Plays"), blank=True, null=True
+    )
+    stickers = models.ManyToManyField(
+        to=UserProfile, verbose_name=_("Stickers"), blank=True, null=True
+    )
     download_count = models.PositiveIntegerField(_("Download Count"), default=0)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
+    objects = SongManager()
+
     def __str__(self) -> str:
         return self.title
+
+    @property
+    def likes(self):
+        # getter for likes attribute
+        return 10  # placeholder
+
+    @property
+    def downloads(self):
+        # getter for downloads attr
+        return 10
+
+    @property
+    def plays(self):
+        # getter for plays attr
+        return 10
+
+    @property
+    def stickers(self):
+        # getter for stickers attr
+        return 10
 
 
 class Playlist(models.Model):

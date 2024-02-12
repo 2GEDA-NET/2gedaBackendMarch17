@@ -17,7 +17,7 @@ RUN python -m venv /py && \
     pip install --upgrade pip && \
     apk add --update --no-cache postgresql-client && \
     apk add --update --no-cache --virtual .tmp-build-deps \
-        gcc libc-dev linux-headers build-base postgresql-dev && \
+        gcc libc-dev ffmpeg linux-headers build-base postgresql-dev && \
     pip install -r /tmp/requirements.txt && \
     apk del .tmp-build-deps && \
     rm -rf /tmp && \

@@ -3,25 +3,31 @@ from rest_framework import serializers
 from . import models as m
 
 
+class SongLibrarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = m.Library
+        fields = "__all__"
+
+
 class ArtistSerializer(serializers.ModelSerializer):
     class Meta:
         model = m.Artist
-        field = "__all__"
+        fields = "__all__"
 
 
 class SongCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = m.SongCategory
-        field = "__all__"
+        fields = "__all__"
 
 
 class SongSerializer(serializers.ModelSerializer):
     class Meta:
         model = m.Song
-        field = "__all__"
+        fields = "__all__"
 
 
 class AlbumSerializer(serializers.ModelSerializer):
     class Meta:
         model = m.Album
-        field = "__all__"
+        fields = "__all__"

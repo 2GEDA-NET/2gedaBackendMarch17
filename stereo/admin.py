@@ -20,7 +20,7 @@ class AlbumAdmin(admin.ModelAdmin):
 
 @admin.register(m.Artist)
 class ArtistAdmin(admin.ModelAdmin):
-    list_display = ["full_name"]
+    list_display = ["artist_name"]
 
 
 @admin.register(m.Library)
