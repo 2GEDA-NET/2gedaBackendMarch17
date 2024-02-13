@@ -176,7 +176,8 @@ if config("SEND_EMAIL", cast=bool):
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
-if config("USE_S3", cast=bool):
+USE_S3 = config("USE_S3", cast=bool)
+if USE_S3:
     # AWS S3 Configuration
     AWS_ACCESS_KEY_ID = config("AWS_ACCESS_KEY_ID")
     AWS_SECRET_ACCESS_KEY = config("AWS_SECRET_ACCESS_KEY")
