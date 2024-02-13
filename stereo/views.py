@@ -1,11 +1,10 @@
-from rest_framework import generics, status, viewsets, decorators
+from rest_framework import decorators, generics, status, viewsets
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from . import models as m
 from . import serializers as s
-
 from .permissions import HasStereoAccountPermission
-from rest_framework.permissions import AllowAny
 
 
 class ArtistAPI(
