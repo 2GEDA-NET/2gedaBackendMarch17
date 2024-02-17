@@ -129,20 +129,37 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
     "user.authentication_backends.BusinessAccountAuthBackend",
+    "user.auth.backends.UsernameAuthBackend",
     "user.authentication_backends.CustomAuthBackend",
 ]
+
+FROM_EMAIL = "2gedafullstack@gmail.com"
 
 # Add DRF authentication and permission classes
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         # 'rest_framework.authentication.BasicAuthentication',
-        "rest_framework.authentication.SessionAuthentication",
+        # "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.TokenAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
 }
+
+# Swagger Configuration
+LOGIN_URL = "/admin/"
+LOGOUT_URL = "/admin/logout/"
+LOGOUT_REDIRECT_URL = "/admin/"
+
+SWAGGER_SETTINGS = {
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {"type": "apiKey", "name": "Authorization", "in": "header"}
+    },
+    "LOGIN_URL": LOGIN_URL,
+    "LOGOUT_URL": LOGOUT_URL,
+}
+
 
 # Channel Layers Settings
 CHANNEL_LAYERS = {

@@ -20,7 +20,7 @@ from chat.models import *
 from django.contrib.auth import authenticate, login, logout
 from .authentication_backends import BusinessAccountAuthBackend
 from feed.models import *
-from .serializers import *
+from .auth.serializers import *
 from django.middleware import csrf
 from django.db import IntegrityError
 from rest_framework.views import APIView

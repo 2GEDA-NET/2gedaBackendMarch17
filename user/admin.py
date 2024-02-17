@@ -1,64 +1,133 @@
 from django.contrib import admin
 from import_export.admin import ImportExportModelAdmin
-from .models import *
-# Register your models here.
 
-@admin.register(ProfileMedia)
-class ProfileMediaAdmin(ImportExportModelAdmin):
-    list_display = ('media',)
+from .account import models as acc
+from .auth.models import OneTimePassword, User
 
 
 @admin.register(User)
 class UsersAdmin(ImportExportModelAdmin):
-    list_display = ('username', 'first_name', 'last_name','email','phone_number',
-                    'is_business', 'is_personal', 'is_admin','is_verified')
-    search_fields = ['username', 'first_name', 'last_name']
-    list_editable = ['is_business', 'is_personal', 'is_admin',]
-    list_filter = ('is_business', 'is_personal', 'is_admin','is_verified')
+    list_display = (
+        "username",
+        "first_name",
+        "last_name",
+        "email",
+        "phone_number",
+        "is_business",
+        "is_personal",
+        "is_admin",
+        "is_verified",
+    )
+    readonly_fields = (
+        "email",
+        "password",
+        "username",
+        "phone_number",
+        "last_login",
+        "date_joined",
+    )
+    search_fields = ("email", "phone_number")
+    list_editable = [
+        "is_business",
+        "is_personal",
+        "is_admin",
+    ]
+    list_filter = ()
+
+    fieldsets = (
+        (
+            "Authentication",
+            {"fields": ("email", "username", "phone_number")},
+        ),
+        (
+            "Personal Information",
+            {"fields": ("first_name", "last_name", "is_personal", "is_business")},
+        ),
+        (
+            "Permissions",
+            {"fields": ("is_active", "is_verified", "is_staff", "is_superuser")},
+        ),
+        ("Important dates", {"fields": ("last_login", "date_joined")}),
+    )
+
+    add_fieldsets = (
+        (None, {"fields": ("email", "phone_number", "password1", "password2")}),
+        ("Permissions", {"fields": ("is_verified", "is_staff", "is_superuser")}),
+    )
 
 
-@admin.register(UserProfile)
+@admin.register(OneTimePassword)
+class OneTimePasswordAdmin(admin.ModelAdmin):
+    list_display = ["user", "otp", "verification_type", "created_at"]
+
+
+@admin.register(acc.ProfileMedia)
+class ProfileMediaAdmin(ImportExportModelAdmin):
+    list_display = ("media",)
+
+
+@admin.register(acc.UserProfile)
 class UserProfileAdmin(ImportExportModelAdmin):
-    list_display = ('user','work', 'date_of_birth', 'gender',)
-    list_filter = ('gender',)
-    search_fields = ['user',]
+    list_display = (
+        "user",
+        "work",
+        "date_of_birth",
+        "gender",
+    )
+    list_filter = ("gender",)
+    search_fields = [
+        "user",
+    ]
 
-@admin.register(BusinessCategory)
+
+@admin.register(acc.BusinessCategory)
 class BusinessCategoryAdmin(ImportExportModelAdmin):
-    list_display = ('name', 'desc')
-    list_filter = ('name',)
+    list_display = ("name", "desc")
+    list_filter = ("name",)
 
-@admin.register(BusinessAvailability)
+
+@admin.register(acc.BusinessAvailability)
 class BusinessAvailability(ImportExportModelAdmin):
     list_display = ()
 
-@admin.register(BusinessAccount)
+
+@admin.register(acc.BusinessAccount)
 class BusinessAccountAdmin(ImportExportModelAdmin):
-    list_display = ('profile', 'role', 'business_category',)
-    list_filter = ('business_category',)
+    list_display = (
+        "profile",
+        "role",
+        "business_category",
+    )
+    list_filter = ("business_category",)
 
 
-@admin.register(ReportedUser)
+@admin.register(acc.ReportedUser)
 class ReportedUserAdmin(ImportExportModelAdmin):
-    list_display = ('user', 'is_banned', 'is_disabled')
-    list_editable = ['is_banned', 'is_disabled',]
+    list_display = ("user", "is_banned", "is_disabled")
+    list_editable = [
+        "is_banned",
+        "is_disabled",
+    ]
 
-@admin.register(Address)
+
+@admin.register(acc.Address)
 class AddressAdmin(ImportExportModelAdmin):
-    list_display = ('country', 'city', 'location')
+    list_display = ("country", "city", "location")
 
 
-@admin.register(Verification)
+@admin.register(acc.Verification)
 class VerificationAdmin(ImportExportModelAdmin):
-    list_display = ('profile', 'legal_name', 'work')
+    list_display = ("profile", "legal_name", "work")
 
-@admin.register(Notification)
+
+@admin.register(acc.Notification)
 class NotificationAdmin(ImportExportModelAdmin):
-    list_display = ('recipient', 'sender', 'message', 'timestamp')
+    list_display = ("recipient", "sender", "message", "timestamp")
 
 
-@admin.register(Device)
+@admin.register(acc.Device)
 class DeviceAdmin(ImportExportModelAdmin):
-    list_display = ('name', 'category', 'input')
+    list_display = ("name", "category", "input")
 
-admin.site.site_header = '2geda Administration Dashboard'
+
+admin.site.site_header = "2geda Administration Dashboard"

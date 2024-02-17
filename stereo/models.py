@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext as _
 
-from user.models import UserProfile
+from user.account.models import UserProfile
 
 # class StereoAccount(models.Model):
 #     profile = models.OneToOneField(

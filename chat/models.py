@@ -1,51 +1,79 @@
-from django.db.models import Q
-from django.db import models
-from user.models import *
-from django.contrib.auth.models import Group
-from cryptography.fernet import Fernet
 import base64
+
 from channels.db import database_sync_to_async
+from cryptography.fernet import Fernet
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
+from django.db import models
+from django.db.models import Q
 
+User = get_user_model()
 
-# Create your models here.
 
 class ThreadManager(models.Manager):
     def by_user(self, **kwargs):
-        user = kwargs.get('user')
+        user = kwargs.get("user")
         lookup = Q(first_person=user) | Q(second_person=user)
         qs = self.get_queryset().filter(lookup).distinct()
         return qs
 
 
 class Thread(models.Model):
-    first_person = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='thread_first_person')
-    second_person = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True,
-                                     related_name='thread_second_person')
+    first_person = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="thread_first_person",
+    )
+    second_person = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="thread_second_person",
+    )
     updated = models.DateTimeField(auto_now=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     objects = ThreadManager()
+
     class Meta:
-        unique_together = ['first_person', 'second_person']
+        unique_together = ["first_person", "second_person"]
+
 
 # This conversation works like a group chat
 class Conversation(models.Model):
-    participants = models.ManyToManyField(User, related_name='conversations')
-    group_name = models.CharField(max_length=255, blank=True, null=True)  # Name of a group conversation
-    
+    participants = models.ManyToManyField(User, related_name="conversations")
+    group_name = models.CharField(
+        max_length=255, blank=True, null=True
+    )  # Name of a group conversation
+
     ROLE_CHOICES = [
-        ('admin', 'Admin'),
-        ('moderator', 'Moderator'),
-        ('participant', 'Participant'),
+        ("admin", "Admin"),
+        ("moderator", "Moderator"),
+        ("participant", "Participant"),
     ]
 
     roles = models.JSONField(default=dict)
-    is_group = models.BooleanField(default=False)  # Indicates if it's a group conversation
-    group_members = models.ManyToManyField(User, related_name='group_conversations', blank=True)  # Members of a group conversation
-    created_at = models.DateTimeField(auto_now_add=True)  # Timestamp when the conversation was created
-    updated_at = models.DateTimeField(auto_now=True)  # Timestamp when the conversation was last updated
-    is_archived = models.BooleanField(default=False)  # Indicates if the conversation is archived
-    unread_count = models.PositiveIntegerField(default=0)  # Count of unread messages in the conversation
+    is_group = models.BooleanField(
+        default=False
+    )  # Indicates if it's a group conversation
+    group_members = models.ManyToManyField(
+        User, related_name="group_conversations", blank=True
+    )  # Members of a group conversation
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )  # Timestamp when the conversation was created
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )  # Timestamp when the conversation was last updated
+    is_archived = models.BooleanField(
+        default=False
+    )  # Indicates if the conversation is archived
+    unread_count = models.PositiveIntegerField(
+        default=0
+    )  # Count of unread messages in the conversation
     is_deleted = models.BooleanField(default=False)
     # Add a field to store the conversation's encryption key
     encryption_key = models.BinaryField()
@@ -85,10 +113,14 @@ class Conversation(models.Model):
 
     def __str__(self):
         if self.is_group:
-            return self.group_name if self.group_name else f'Group Conversation {self.id}'
+            return (
+                self.group_name if self.group_name else f"Group Conversation {self.id}"
+            )
         else:
-            participants_names = ', '.join([user.username for user in self.participants.all()])
-            return f'Conversation ({participants_names})'
+            participants_names = ", ".join(
+                [user.username for user in self.participants.all()]
+            )
+            return f"Conversation ({participants_names})"
 
     @staticmethod
     def generate_encryption_key():
@@ -98,6 +130,7 @@ class Conversation(models.Model):
     def get_encryption_key(self):
         # Retrieve the conversation's encryption key
         return self.encryption_key
+
 
 class BroadcastPlan(models.Model):
     name = models.CharField(max_length=255)
@@ -114,33 +147,56 @@ class BroadcastPermission(models.Model):
     remaining_recipients = models.PositiveIntegerField(default=0)
 
 
-
 # This conversation works like t
 class ChatMessage(models.Model):
-    thread = models.ForeignKey(Thread, null=True, blank=True, on_delete=models.CASCADE, related_name='chatmessage_thread')
+    thread = models.ForeignKey(
+        Thread,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="chatmessage_thread",
+    )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     message = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
-    is_read = models.BooleanField(default=False, verbose_name='Read')
-    is_delivered = models.BooleanField(default=False, verbose_name='Delivered')
-    is_private = models.BooleanField(default=False, verbose_name='Private Messages')
-    is_public = models.BooleanField(default=False, verbose_name='Public Messages')
-    custom_visibility = models.BooleanField(default=False)  # Message-specific visibility flag
-    read_only_participants = models.ManyToManyField(User, related_name='read_only_messages', blank=True)
-    visible_to = models.ManyToManyField(User, related_name='visible_messages', blank=True)
+    is_read = models.BooleanField(default=False, verbose_name="Read")
+    is_delivered = models.BooleanField(default=False, verbose_name="Delivered")
+    is_private = models.BooleanField(default=False, verbose_name="Private Messages")
+    is_public = models.BooleanField(default=False, verbose_name="Public Messages")
+    custom_visibility = models.BooleanField(
+        default=False
+    )  # Message-specific visibility flag
+    read_only_participants = models.ManyToManyField(
+        User, related_name="read_only_messages", blank=True
+    )
+    visible_to = models.ManyToManyField(
+        User, related_name="visible_messages", blank=True
+    )
 
     # Add fields for encrypted message and IV
     encrypted_message = models.BinaryField()
     iv = models.BinaryField()
 
-    is_reported = models.BooleanField(default=False)  # Flag to indicate if the message is reported
-    is_starred = models.BooleanField(default=False)  # Flag to indicate if the message is starred
+    is_reported = models.BooleanField(
+        default=False
+    )  # Flag to indicate if the message is reported
+    is_starred = models.BooleanField(
+        default=False
+    )  # Flag to indicate if the message is starred
     is_deleted = models.BooleanField(default=False)
     # Reference to the conversation to which the message belongs
-    conversation = models.ForeignKey(Conversation, null=True, blank=True, on_delete=models.CASCADE, related_name='messages')
+    conversation = models.ForeignKey(
+        Conversation,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="messages",
+    )
 
-    is_broadcast = models.BooleanField(default=False, verbose_name='Broadcast Message')
-    broadcast_recipients = models.ManyToManyField(User, related_name='received_broadcasts', blank=True)
+    is_broadcast = models.BooleanField(default=False, verbose_name="Broadcast Message")
+    broadcast_recipients = models.ManyToManyField(
+        User, related_name="received_broadcasts", blank=True
+    )
 
     @staticmethod
     def encrypt_message(message, encryption_key):
@@ -166,8 +222,10 @@ class ChatMessage(models.Model):
     @database_sync_to_async
     def create_chat_message(self, thread, user, msg, encryption_key):
         encrypted_message, iv = self.encrypt_message(msg, encryption_key)
-        ChatMessage.objects.create(thread=thread, user=user, encrypted_message=encrypted_message, iv=iv)
-    
+        ChatMessage.objects.create(
+            thread=thread, user=user, encrypted_message=encrypted_message, iv=iv
+        )
+
     @database_sync_to_async
     def create_broadcast_message(self, thread, user, msg, encryption_key, recipients):
         encrypted_message, iv = self.encrypt_message(msg, encryption_key)
@@ -185,30 +243,42 @@ class Participant(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     is_active_friends = models.BooleanField(default=True)
     last_seen = models.TimeField()
-    sticking_to = models.ForeignKey('user.UserProfile', on_delete=models.CASCADE, related_name='chats', null=True, blank=True)
+    sticking_to = models.ForeignKey(
+        "user.UserProfile",
+        on_delete=models.CASCADE,
+        related_name="chats",
+        null=True,
+        blank=True,
+    )
 
     def __str__(self):
         return self.user.username
 
 
 class ChatGroup(Group):
-    """ extend Group model to add extra info"""
+    """extend Group model to add extra info"""
+
     description = models.TextField(blank=True, help_text="description of the group")
-    mute_notifications = models.BooleanField(default=False, help_text="disable notification if true")
-    icon = models.ImageField(help_text="Group icon", blank=True, upload_to="chartgroupimg/")
+    mute_notifications = models.BooleanField(
+        default=False, help_text="disable notification if true"
+    )
+    icon = models.ImageField(
+        help_text="Group icon", blank=True, upload_to="chartgroupimg/"
+    )
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
 
     def get_absolute_url(self):
         from django.urls import reverse
-        return reverse('chat:room', args=[str(self.id)])
+
+        return reverse("chat:room", args=[str(self.id)])
 
 
 class LifeStyle(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     text = models.TextField(blank=True, null=True)
-    image = models.ImageField(upload_to='status_images/', blank=True, null=True)
-    video = models.FileField(upload_to='status_videos/', blank=True, null=True)
+    image = models.ImageField(upload_to="status_images/", blank=True, null=True)
+    video = models.FileField(upload_to="status_videos/", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

@@ -1,7 +1,8 @@
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-from user.models import Notification
+from user.account.models import Notification
+
 
 def calculate_similarity(frequently_searched_polls, all_polls):
     # Extract the text (e.g., question) from frequently searched polls
@@ -14,13 +15,17 @@ def calculate_similarity(frequently_searched_polls, all_polls):
     tfidf_vectorizer = TfidfVectorizer()
 
     # Transform the text into TF-IDF vectors
-    tfidf_matrix = tfidf_vectorizer.fit_transform(all_polls_text + frequently_searched_text)
+    tfidf_matrix = tfidf_vectorizer.fit_transform(
+        all_polls_text + frequently_searched_text
+    )
 
     # Calculate cosine similarity between frequently searched polls and all polls
     similarity_matrix = cosine_similarity(tfidf_matrix)
 
     # Get the similarity scores for frequently searched polls
-    frequently_searched_similarity_scores = similarity_matrix[-len(frequently_searched_polls):]
+    frequently_searched_similarity_scores = similarity_matrix[
+        -len(frequently_searched_polls) :
+    ]
 
     return frequently_searched_similarity_scores
 

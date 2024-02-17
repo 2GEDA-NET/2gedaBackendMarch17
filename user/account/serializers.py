@@ -1,65 +1,18 @@
 from rest_framework import serializers
-from .models import *
-from django.db.models import Q
-from rest_framework import serializers
-from django.db.models import Q
-from django.utils.translation import gettext as _
-from django.contrib.auth.hashers import check_password
 
-
-class UserSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = User
-        fields = "__all__"
-
-
-class UserRegistrationSerializer(serializers.ModelSerializer):
-    phone_number = serializers.CharField(required=False)  # Make phone_number optional
-    email = serializers.EmailField(required=False)  # Make email optional
-    password = serializers.CharField(write_only=True)
-
-    class Meta:
-        model = User
-        fields = ["email", "phone_number", "username", "password"]
-
-    def validate(self, validated_data):
-        email = validated_data.get("email")
-        phone_number = validated_data.get("phone_number")
-
-        if not email and not phone_number:
-            raise serializers.ValidationError("Enter an email or a phone number.")
-
-        return validated_data
-
-    def create(self, validated_data):
-        email = validated_data.get("email")
-        phone_number = validated_data.get("phone_number")
-        username = validated_data.get("username")
-
-        # Debugging statement: Print the email and phone number
-        print(f"Creating user with Email: {email}, Phone Number: {phone_number}")
-
-        # Create and save the User instance
-        user = User.objects.create_user(
-            username=username,
-            email=email,
-            phone_number=phone_number,
-            password=validated_data.get("password"),
-        )
-
-        return user
+from ..auth.models import User
+from . import models as m
 
 
 class ReportUserSerializer(serializers.ModelSerializer):
     class Meta:
-        model = ReportedUser
+        model = m.ReportedUser
         fields = ["user", "description"]
 
 
 class ReportedUserSerializer(serializers.ModelSerializer):
     class Meta:
-        model = ReportedUser
+        model = m.ReportedUser
         fields = "__all__"
 
 
@@ -71,7 +24,7 @@ class ReportedUserSerializer(serializers.ModelSerializer):
 
 class BusinessCategorySerializer(serializers.ModelSerializer):
     class Meta:
-        model = BusinessCategory
+        model = m.BusinessCategory
         fields = [
             "name",
         ]
@@ -79,19 +32,21 @@ class BusinessCategorySerializer(serializers.ModelSerializer):
 
 class AddressSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Address
+        model = m.Address
         fields = "__all__"
 
 
 class CurrentCityAddressSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Address  # Replace 'Address' with the actual name of your Address model
+        model = (
+            m.Address
+        )  # Replace 'Address' with the actual name of your Address model
         fields = ("current_city",)
 
 
 class BusinessAvailabilitySerializer(serializers.ModelSerializer):
     class Meta:
-        model = BusinessAvailability
+        model = m.BusinessAvailability
         fields = "__all__"
 
 
@@ -102,7 +57,7 @@ class BusinessAccountSerializer(serializers.ModelSerializer):
     business_category = BusinessCategorySerializer()
 
     class Meta:
-        model = BusinessAccount
+        model = m.BusinessAccount
         fields = "__all__"
 
     def create(self, validated_data):
@@ -112,15 +67,15 @@ class BusinessAccountSerializer(serializers.ModelSerializer):
             "business_category"
         )  # Extract business category data
 
-        business_availability = BusinessAvailability.objects.create(
+        business_availability = m.BusinessAvailability.objects.create(
             **business_availability_data
         )
-        address = Address.objects.create(**address_data)
-        business_category = BusinessCategory.objects.create(
+        address = m.Address.objects.create(**address_data)
+        business_category = m.BusinessCategory.objects.create(
             **business_category_data
         )  # Create business category
 
-        business_profile = BusinessAccount.objects.create(
+        business_profile = m.BusinessAccount.objects.create(
             business_availability=business_availability,
             address=address,
             business_category=business_category,  # Assign business category
@@ -217,7 +172,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     address = CurrentCityAddressSerializer()
 
     class Meta:
-        model = UserProfile
+        model = m.UserProfile
         fields = (
             "work",
             "date_of_birth",
@@ -290,129 +245,14 @@ class UserListSerializer(serializers.ModelSerializer):
 
     def get_sticking_count(self, obj):
         try:
-            user_profile = UserProfile.objects.get(user=obj)
+            user_profile = m.UserProfile.objects.get(user=obj)
             return user_profile.sticking.count()
-        except UserProfile.DoesNotExist:
+        except m.UserProfile.DoesNotExist:
             return 0
 
     def get_sticker_count(self, obj):
         try:
-            user_profile = UserProfile.objects.get(user=obj)
+            user_profile = m.UserProfile.objects.get(user=obj)
             return user_profile.stickers.count()
-        except UserProfile.DoesNotExist:
+        except m.UserProfile.DoesNotExist:
             return 0
-
-
-class UserDeletionSerializer(serializers.Serializer):
-    reason_choice = serializers.CharField(write_only=True, required=False)
-    reason = serializers.CharField(write_only=True, required=False)
-    password = serializers.CharField(write_only=True, required=True)
-
-
-class PasswordChangeSerializer(serializers.Serializer):
-    old_password = serializers.CharField(required=True)
-    new_password = serializers.CharField(required=True)
-
-
-class PasswordResetRequestSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-
-
-class VerificationSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Verification
-        fields = "__all__"
-
-
-class NotificationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Notification
-        fields = "__all__"
-
-
-class BlockedUserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = BlockedUser
-        fields = ("blocker", "blocked_user", "reason")
-
-
-class BusinessAccountRegistrationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = BusinessAccount
-        fields = [
-            "business_name",
-            "business_password",
-            "role",
-            "image",
-            "business_category",
-            "year_founded",
-        ]
-
-
-class BusinessAccountLoginSerializer(serializers.Serializer):
-    business_name = serializers.CharField()
-    business_password = serializers.CharField()
-
-
-class GeneralSearchSerializer(serializers.Serializer):
-    query = serializers.CharField()
-
-
-class FlagUserProfileSerializer(serializers.Serializer):
-    username = serializers.CharField()
-
-
-class BusinessAccountChangePasswordSerializer(serializers.Serializer):
-    old_password = serializers.CharField(required=True)
-    new_password = serializers.CharField(required=True)
-
-    def validate_old_password(self, value):
-        user = self.context["request"].user
-        if not check_password(value, user.businessaccount.business_password):
-            raise serializers.ValidationError("Incorrect old password.")
-        return value
-
-
-class CheckProfileUpdateStatus(serializers.Serializer):
-    class Meta:
-        model = UserProfile
-        fields = ("has_updated_profile",)
-
-
-class UserSerializer2(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ["first_name", "last_name"]
-
-
-class ProfileMediaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProfileMedia
-        fields = "__all__"
-
-
-class CoverSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CoverImageMedia
-        fields = "__all__"
-
-
-class UserProfileSerializer2(serializers.ModelSerializer):
-    date_of_birth = serializers.DateField(format="%Y-%m-%d")
-    user = UserSerializer2()
-    profile_image = ProfileMediaSerializer(required=False)  # Add required=False here
-    cover_image = ProfileMediaSerializer(required=False)  # Add required=False here
-
-    class Meta:
-        model = UserProfile
-        fields = [
-            "user",
-            "work",
-            "date_of_birth",
-            "gender",
-            "custom_gender",
-            "religion",
-            "cover_image",
-            "profile_image",
-        ]

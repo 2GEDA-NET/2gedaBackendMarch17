@@ -1,5 +1,6 @@
-from user.models import Notification
-from .models import UserProfile
+from user.account.models import Notification
+
+from .account.models import UserProfile
 
 
 def send_notification(recipient, sender, message):
@@ -8,6 +9,7 @@ def send_notification(recipient, sender, message):
 
 
 # Assuming you have a User model and a UserProfile model that stores user behavior
+
 
 def get_frequently_searched_polls(user):
     # Retrieve the user's frequently searched polls
