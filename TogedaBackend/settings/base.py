@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "poll",
     "stereo",
     "tv",
+    "education",
 ]
 
 MIDDLEWARE = [

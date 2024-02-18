@@ -87,11 +87,11 @@ class UserManager(BaseUserManager):
 
 class User(AbstractUser):
     # email = models.EmailField(unique=True, null=True, blank=True)
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=True, default=0)
     is_business = models.BooleanField(default=False, verbose_name="Business Account")
     is_personal = models.BooleanField(default=False, verbose_name="Personal Account")
     is_admin = models.BooleanField(default=False, verbose_name="Admin Account")
-    phone_number = models.CharField(unique=True, max_length=20)
+    phone_number = models.CharField(unique=True, max_length=20, default=0)
     # phone_number = models.BigIntegerField(unique=True, null=True, blank=True)
     is_verified = models.BooleanField(default=False, verbose_name="Verified")
     last_seen = models.DateTimeField(null=True, blank=True)

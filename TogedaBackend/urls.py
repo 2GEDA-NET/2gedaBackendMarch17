@@ -44,6 +44,7 @@ api_routes = [
     path("business/", include("business.urls")),
     path("poll/", include("poll.urls")),
     path("stereo/", include("stereo.urls")),
+    path("education/", include("education.urls")),
 ]
 
 urlpatterns = [
