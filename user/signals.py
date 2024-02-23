@@ -1,30 +1,15 @@
-from django.contrib.auth import get_user_model
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-# from rest_framework.authtoken.models import Token
-from stereo.models import Library
-
-from .account.models import UserProfile
-
-User = get_user_model()
+from .account.models import UserProfile, UserAddress
+from .auth.models import User
 
 
 @receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
+def create_instances(sender, instance, created, **kwargs):
+    """
+    Create a user profile when a new user is created.
+    """
     if created:
-        print("User profile created for:", instance.username)
         profile = UserProfile.objects.create(user=instance)
-        Library.objects.create(profile=profile)
-
-
-@receiver(post_save, sender=User)
-def save_user_profile(sender, instance, **kwargs):
-    print("User profile saved for:", instance.username)
-    instance.userprofile.save()
-
-
-# @receiver(post_save, sender=User)
-# def create_auth_token(sender, instance=None, created=False, **kwargs):
-#     if created:
-#         Token.objects.create(user=instance)
+        UserAddress.objects.create(profile=profile)

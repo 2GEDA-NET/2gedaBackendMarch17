@@ -66,11 +66,16 @@ class ProfileMediaAdmin(ImportExportModelAdmin):
     list_display = ("media",)
 
 
+@admin.register(acc.Sticker)
+class StickerAdmin(admin.ModelAdmin):
+    list_display = ["sticker", "sticked", "sticked_on"]
+
+
 @admin.register(acc.UserProfile)
 class UserProfileAdmin(ImportExportModelAdmin):
     list_display = (
         "user",
-        "work",
+        "occupation",
         "date_of_birth",
         "gender",
     )
@@ -78,27 +83,6 @@ class UserProfileAdmin(ImportExportModelAdmin):
     search_fields = [
         "user",
     ]
-
-
-@admin.register(acc.BusinessCategory)
-class BusinessCategoryAdmin(ImportExportModelAdmin):
-    list_display = ("name", "desc")
-    list_filter = ("name",)
-
-
-@admin.register(acc.BusinessAvailability)
-class BusinessAvailability(ImportExportModelAdmin):
-    list_display = ()
-
-
-@admin.register(acc.BusinessAccount)
-class BusinessAccountAdmin(ImportExportModelAdmin):
-    list_display = (
-        "profile",
-        "role",
-        "business_category",
-    )
-    list_filter = ("business_category",)
 
 
 @admin.register(acc.ReportedUser)
@@ -110,9 +94,9 @@ class ReportedUserAdmin(ImportExportModelAdmin):
     ]
 
 
-@admin.register(acc.Address)
+@admin.register(acc.UserAddress)
 class AddressAdmin(ImportExportModelAdmin):
-    list_display = ("country", "city", "location")
+    list_display = ("country", "state", "city")
 
 
 @admin.register(acc.Verification)

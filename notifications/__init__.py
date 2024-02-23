@@ -14,13 +14,14 @@ def send_verification_code(user: object, verification_type: str) -> None:
     """Send Email notification to users."""
     subject = ""
     template = ""
+    otp = user.one_time_password.order_by("-created_at").first().otp
 
     if verification_type == "account_verification":
         subject = "2geda Account Verification Code"
-        template = ""
+        template = "user/email.html"
 
-    if verification_type == "password_verification":
-        subject = "Forget Password Verification Code"
+    if verification_type == "password_reset":
+        subject = "Forget Password Reset Code"
         template = ""
 
     EmailThread(
@@ -28,10 +29,10 @@ def send_verification_code(user: object, verification_type: str) -> None:
         plain_message="Hi %s, Your verification code is %s."
         % (
             user.username,
-            user.one_time_password.order_by("-created_at").first().otp,
+            otp,
         ),
         receiver=[user.email],
         html_message=(
-            render_to_string(template, context={"user": user}) if template else None
+            render_to_string(template, context={"otp": otp}) if template else None
         ),
     ).run()

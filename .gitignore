@@ -3,6 +3,8 @@
 ./.vscode
 .env
 .env.save
+.env.dev
+.env.local
 venv
 static
 media

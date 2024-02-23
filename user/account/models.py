@@ -1,20 +1,19 @@
 from django.db import models
 from django.utils.translation import gettext as _
-from location_field.models.plain import PlainLocationField
-from django.contrib.auth import get_user_model
 
-# User = get_user_model()
+# from location_field.models.plain import PlainLocationField
 
 from ..auth.models import User
+from django.conf import settings
 
+COUNTS = {1000: "k", 1000000: "m", 1000000000: "b"}
 
-class ProfileMedia(models.Model):
-    media = models.FileField(upload_to="profile_files/", blank=True, null=True)
-
-
-class CoverImageMedia(models.Model):
-    media = models.FileField(upload_to="cover_files/", blank=True, null=True)
-
+RELIGION_CHOICES = [
+    ("Christianity", "Christianity"),
+    ("Muslim", "Muslim"),
+    ("Indigenous", "Indigenous"),
+    ("Others", "Others"),
+]
 
 GENDER_CHOICES = (
     ("Male", "Male"),
@@ -34,36 +33,27 @@ DAYS_OF_THE_WEEK_CHOICES = (
 )
 
 
-class BusinessCategory(models.Model):
-    name = models.CharField(max_length=250)
-    desc = models.TextField()
-
-    def __str__(self):
-        return self.name
+class ProfileMedia(models.Model):
+    media = models.FileField(upload_to="profile_files/", blank=True, null=True)
+    media_type = models.CharField(_("Type of media"), max_length=20, blank=True)
 
 
-RELIGION_CHOICES = [
-    ("Christianity", "Christianity"),
-    ("Muslim", "Muslim"),
-    ("Indigenous", "Indigenous"),
-    ("Others", "Others"),
-]
+class CoverImageMedia(models.Model):
+    media = models.FileField(upload_to="cover_files/", blank=True, null=True)
 
 
 class UserProfile(models.Model):
-    # Create a one-to-one relationship with the User model
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    work = models.CharField(max_length=255, blank=True, null=True)
-    date_of_birth = models.DateField(
-        blank=True,
-        null=True,
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile"
     )
+    bio = models.TextField(_("User Bio"), blank=True, null=True)
+    occupation = models.CharField(_("Occupation"), max_length=50, blank=True, null=True)
+    date_of_birth = models.DateField(_("Date of birth"), blank=True, null=True)
     gender = models.CharField(
-        max_length=15, choices=GENDER_CHOICES, blank=True, null=True
+        _("Gender"), max_length=15, choices=GENDER_CHOICES, blank=True, null=True
     )
-    custom_gender = models.CharField(max_length=250, blank=True, null=True)
     religion = models.CharField(
-        max_length=20, choices=RELIGION_CHOICES, verbose_name="Religion"
+        _("Religion"), max_length=20, choices=RELIGION_CHOICES, blank=True, null=True
     )
     media = models.ForeignKey(
         ProfileMedia,
@@ -72,125 +62,108 @@ class UserProfile(models.Model):
         null=True,
         related_name="user_media",
     )
-    cover_image = models.ForeignKey(
-        CoverImageMedia,
-        on_delete=models.CASCADE,
-        blank=True,
-        null=True,
-        related_name="user_cover_image",
+    cover_image = models.ImageField(
+        _("Cover Image"), upload_to="cover-images", blank=True, null=True
     )
-    address = models.ForeignKey(
-        "Address", on_delete=models.CASCADE, null=True, related_name="user_address"
+    profile_picture = models.ImageField(
+        _("Profile Image"), upload_to="profile-images", blank=True, null=True
     )
-    stickers = models.ManyToManyField(
-        "self", related_name="sticking", symmetrical=False
-    )
-    is_flagged = models.BooleanField(default=False, verbose_name="Flagged")
-    favorite_categories = models.ManyToManyField(
-        "BusinessCategory", related_name="users_with_favorite", blank=True
-    )
-    searched_polls = models.ManyToManyField(
-        "poll.Poll", related_name="users_searched", blank=True
-    )
-    has_updated_profile = models.BooleanField(default=False)
-
-    def sticker_count(self):
-        return self.stickers.count()
-
-    def sticking_count(self):
-        return UserProfile.objects.filter(stickers=self.user).count()
-
-    # @property
-    # def date_of_birth(self):
-    #     return self._date_of_birth.strftime('%Y-%m-%d')
-
-    # @date_of_birth.setter
-    # def date_of_birth(self, value):
-    #     self._date_of_birth = datetime.datetime.strptime(value, '%Y-%m-%d').date()
+    is_flagged = models.BooleanField(_("Is flagged"), default=False)
+    updated_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.user.username
 
+    @property
+    def stickers_count(self):
+        return self.stickers.count()
 
-class BusinessAvailability(models.Model):
-    always_available = models.BooleanField(default=False)
-    # Define availability for each day of the week
-    # sunday
-    sunday = models.BooleanField(default=False)
-    sunday_open = models.TimeField(null=True, blank=True)
-    sunday_close = models.TimeField(null=True, blank=True)
-    # monday
-    monday = models.BooleanField(default=False)
-    monday_open = models.TimeField(null=True, blank=True)
-    monday_close = models.TimeField(null=True, blank=True)
-    # tuesday
-    tuesday = models.BooleanField(default=False)
-    tuesday_open = models.TimeField(null=True, blank=True)
-    tuesday_close = models.TimeField(null=True, blank=True)
-    # wednesday
-    wednesday = models.BooleanField(default=False)
-    wednesday_open = models.TimeField(null=True, blank=True)
-    wednesday_close = models.TimeField(null=True, blank=True)
-    # thursday
-    thursday = models.BooleanField(default=False)
-    thursday_open = models.TimeField(null=True, blank=True)
-    thursday_close = models.TimeField(null=True, blank=True)
-    # friday
-    friday = models.BooleanField(default=False)
-    friday_open = models.TimeField(null=True, blank=True)
-    friday_close = models.TimeField(null=True, blank=True)
-    # saturday
-    saturday = models.BooleanField(default=False)
-    saturday_open = models.TimeField(null=True, blank=True)
-    saturday_close = models.TimeField(null=True, blank=True)
-
-    def __str__(self):
-        return f"Availability for {self.user.username}"
+    @property
+    def sticking_count(self):
+        return 0  # TODO coming to this later
 
 
-class BusinessAccount(models.Model):
-    profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
-    role = models.CharField(max_length=250)
-    image = models.ImageField(upload_to="business_profile/", blank=True, null=True)
-    business_category = models.ForeignKey(BusinessCategory, on_delete=models.CASCADE)
-    business_availability = models.OneToOneField(
-        "BusinessAvailability", on_delete=models.CASCADE
+class Sticker(models.Model):
+    sticker = models.ForeignKey(
+        to=UserProfile,
+        on_delete=models.CASCADE,
+        verbose_name=_("Sticker"),
+        related_name="stickers",
+        help_text=_("stickers are like a followers"),
     )
-    year_founded = models.DateField(blank=True, null=True)
-    business_name = models.CharField(max_length=250)
-    business_password = models.CharField(max_length=200)
-    # business_address = models.ForeignKey('Address', on_delete = models.CASCADE, related_name= 'Address', verbose_name='Business Address')
-
-
-class Address(models.Model):
-    country = models.CharField(max_length=255, null=True, blank=True)
-    city = models.CharField(max_length=100, null=True, blank=True)
-    current_city = models.CharField(max_length=100, null=True, blank=True)
-    street_address = models.CharField(max_length=100, null=True, blank=True)
-    apartment_address = models.CharField(max_length=100, null=True, blank=True)
-    location = PlainLocationField(
-        based_fields=["current_city"], zoom=7, null=True, blank=True
+    sticked = models.ForeignKey(
+        to=UserProfile,
+        on_delete=models.CASCADE,
+        verbose_name=_("Sticked"),
+        related_name="sticking",
+        help_text=_("sticking are like those the user is following"),
     )
-    postal_code = models.CharField(max_length=20, null=True, blank=True)
+    sticked_on = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ["sticker", "sticked"]
+
+
+class UserAddress(models.Model):
+    """A model representing a user address."""
+
+    profile = models.ForeignKey(
+        UserProfile, verbose_name=_("Profile"), on_delete=models.CASCADE
+    )
+    country = models.CharField(
+        _("Country"), max_length=20, default="Nigeria", blank=True, null=True
+    )
+    state = models.CharField(_("State"), max_length=50, blank=True, null=True)
+    city = models.CharField(_("City"), max_length=50, blank=True, null=True)
+    street_address = models.CharField(
+        _("Street Address"), max_length=100, blank=True, null=True
+    )
+    zip_code = models.CharField(_("Zip Code"), max_length=10, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
-        ordering = ("-created_at",)
+    def __str__(self) -> str:
+        return self.street_address
 
-    def __str__(self):
-        components = []
-        if self.country:
-            components.append(self.country)
-        if self.city:
-            components.append(self.city)
-        if self.street_address:
-            components.append(self.street_address)
-        if self.apartment_address:
-            components.append(self.apartment_address)
-        if self.postal_code:
-            components.append(self.postal_code)
-        return ", ".join(components)
+    class Meta:
+        verbose_name = _("User Address")
+        verbose_name_plural = _("User Addresses")
+
+
+# class BusinessAvailability(models.Model):
+#     always_available = models.BooleanField(default=False)
+#     # Define availability for each day of the week
+#     # sunday
+#     sunday = models.BooleanField(default=False)
+#     sunday_open = models.TimeField(null=True, blank=True)
+#     sunday_close = models.TimeField(null=True, blank=True)
+#     # monday
+#     monday = models.BooleanField(default=False)
+#     monday_open = models.TimeField(null=True, blank=True)
+#     monday_close = models.TimeField(null=True, blank=True)
+#     # tuesday
+#     tuesday = models.BooleanField(default=False)
+#     tuesday_open = models.TimeField(null=True, blank=True)
+#     tuesday_close = models.TimeField(null=True, blank=True)
+#     # wednesday
+#     wednesday = models.BooleanField(default=False)
+#     wednesday_open = models.TimeField(null=True, blank=True)
+#     wednesday_close = models.TimeField(null=True, blank=True)
+#     # thursday
+#     thursday = models.BooleanField(default=False)
+#     thursday_open = models.TimeField(null=True, blank=True)
+#     thursday_close = models.TimeField(null=True, blank=True)
+#     # friday
+#     friday = models.BooleanField(default=False)
+#     friday_open = models.TimeField(null=True, blank=True)
+#     friday_close = models.TimeField(null=True, blank=True)
+#     # saturday
+#     saturday = models.BooleanField(default=False)
+#     saturday_open = models.TimeField(null=True, blank=True)
+#     saturday_close = models.TimeField(null=True, blank=True)
+
+#     def __str__(self):
+#         return f"Availability for {self.user.username}"
 
 
 class ReportedUser(models.Model):

@@ -1,11 +1,13 @@
 import paystackapi
 import requests
+
+# from .models import Notification  # Import the Notification model if not already imported
 from django.core.mail import send_mail
 
-from user.account.models import Notification
 from user.utils import send_notification
 
 from .models import *
+from user.account.models import Notification
 
 
 def is_ticket_available(event, ticket_type):

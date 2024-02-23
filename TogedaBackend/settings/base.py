@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "django_otp.plugins.otp_totp",
     "django_otp.plugins.otp_hotp",
     "django_otp.plugins.otp_static",
+    # "debug_toolbar",
     # apps
     "user",
     "chat",
@@ -52,6 +53,11 @@ INSTALLED_APPS = [
     "poll",
     "stereo",
     "tv",
+    "user_id",
+    "reward",
+    "utils",
+    "storages",
+    "payments",
 ]
 
 MIDDLEWARE = [
@@ -59,6 +65,7 @@ MIDDLEWARE = [
     # 'channels.middleware.WebSocketMiddleware',
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    # "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",  # Moved up
@@ -76,7 +83,10 @@ ROOT_URLCONF = "TogedaBackend.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [
+            "templates",
+            os.path.join(BASE_DIR, "notifications/templates"),
+        ],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -135,16 +145,31 @@ AUTHENTICATION_BACKENDS = [
 
 FROM_EMAIL = "2gedafullstack@gmail.com"
 
+GEOIP_PATH = os.path.join(BASE_DIR, "geoip")
+
+INTERNAL_IPS = [
+    # ...
+    "127.0.0.1",
+    # ...
+]
+
 # Add DRF authentication and permission classes
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        # 'rest_framework.authentication.BasicAuthentication',
+        # "rest_framework.authentication.BasicAuthentication",
         # "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.TokenAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.IsAuthenticated",
+        # "rest_framework.permissions.IsAuthenticated",
     ],
+    "DEFAULT_PARSER_CLASSES": [
+        "rest_framework.parsers.FormParser",
+        "rest_framework.parsers.MultiPartParser",
+        "rest_framework.parsers.JSONParser",
+    ],
+    "DEFAULT_SCHEMA_CLASS": "rest_framework.schemas.coreapi.AutoSchema",
+    "EXCEPTION_HANDLER": "TogedaBackend.utils.exception_handler.custom_exception_handler",
 }
 
 # Swagger Configuration
@@ -178,18 +203,28 @@ PAYSTACK_SECRET_KEY = config("PAYSTACK_SECRET_KEY")
 PAYSTACK_PAYMENT_CALLBACK_URL = config("PAYSTACK_PAYMENT_CALLBACK_URL")
 
 # Twilio Account configuration
+SMS_BACKEND = "sms.backends.twilio.SmsBackend"
 TWILIO_ACCOUNT_SID = config("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = config("TWILIO_AUTH_TOKEN")
 TWILIO_PHONE_NUMBER = config("TWILIO_PHONE_NUMBER")
 
-if config("SEND_EMAIL", cast=bool):
+if not config("SEND_EMAIL", cast=bool):
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = "smtp.gmail.com"
+    # EMAIL_HOST = "mail.2geda.net"
+    EMAIL_USE_TLS = True
+    EMAIL_PORT = 587
+    EMAIL_HOST_USER = "deepraisegee@gmail.com"
+    EMAIL_HOST_PASSWORD = "shjieafdhhlaezgc"
+    EMAIL_FILE_PATH = os.path.join(BASE_DIR, "sent_emails")
     # Email Configuration
-    EMAIL_BACKEND = config("EMAIL_BACKEND")
-    EMAIL_HOST = config("EMAIL_HOST")
-    EMAIL_PORT = config("EMAIL_PORT", cast=int)
-    EMAIL_USE_TLS = config("EMAIL_USE_TLS", cast=bool)
-    EMAIL_HOST_USER = config("EMAIL_HOST_USER")
-    EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
+    # EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    # EMAIL_HOST = config("EMAIL_HOST")
+    # EMAIL_PORT = config("EMAIL_PORT", cast=int)
+    # EMAIL_USE_TLS = config("EMAIL_USE_TLS", cast=bool)
+    # EMAIL_HOST_USER = config("EMAIL_HOST_USER")
+    # EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
+    # EMAIL_FILE_PATH = os.path.join(BASE_DIR, "sent_emails")
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
@@ -208,8 +243,16 @@ if USE_S3:
 else:
     # Static files (CSS, JavaScript, Images)
     # https://docs.djangoproject.com/en/4.1/howto/static-files/
-    STATIC_URL = "/static/"
-    STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
+    STATIC_URL = "/static/"
     MEDIA_URL = "/media/"
-    MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+    if not config("DEBUG", cast=bool):
+        STATIC_ROOT = config("CPANEL_ROOT") + "/public_html/staticfiles"
+        MEDIA_ROOT = config("CPANEL_ROOT") + "/public_html/mediafiles"
+    else:
+        STATIC_ROOT = os.path.join(BASE_DIR, "static")
+        MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+# print("Static root: ", STATIC_ROOT)
+# print("Media root: ", MEDIA_ROOT)

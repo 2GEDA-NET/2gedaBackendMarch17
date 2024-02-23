@@ -1,6 +1,8 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+
 from user.models import Notification
+
 from .models import Event
 
 

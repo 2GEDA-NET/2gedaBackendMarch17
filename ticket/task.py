@@ -1,10 +1,13 @@
 # tasks.py
 
-from celery import task
 from datetime import datetime, timedelta
+
+from celery import task
 from django.utils import timezone
+
 from .models import Event
 from .utils import send_notification
+
 
 @task
 def send_event_reminders():
@@ -16,7 +19,9 @@ def send_event_reminders():
 
     for event in upcoming_events:
         # Send a reminder to the event organizer
-        send_notification(event.user, f"Reminder: Your event '{event.title}' is starting soon!")
+        send_notification(
+            event.user, f"Reminder: Your event '{event.title}' is starting soon!"
+        )
 
         # Send reminders to event attendees (assuming you have a ManyToManyField for attendees)
         for attendee in event.attendees.all():

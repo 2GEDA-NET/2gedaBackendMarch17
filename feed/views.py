@@ -20,17 +20,15 @@ from paystackapi.transaction import Transaction
 from django.conf import settings
 
 
-
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def create_post(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         post_data = request.data
-        post_media_data = post_data.pop('media', None)
+        post_media_data = post_data.pop("media", None)
 
         # Create a new post
-        post_serializer = PostSerializer(
-            data=post_data, context={'request': request})
+        post_serializer = PostSerializer(data=post_data, context={"request": request})
         if post_serializer.is_valid():
             post = post_serializer.save(user=request.user)
 
@@ -46,7 +44,7 @@ def create_post(request):
         return Response(post_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def post_feed(request):
     # Retrieve the UserProfile associated with the current user
@@ -56,15 +54,17 @@ def post_feed(request):
     sticking_users = user_profile.stickers.all()
 
     # Retrieve posts from users that the current user follows, ordered by timestamp
-    posts = Post.objects.filter(user__userprofile__in=sticking_users).order_by('-timestamp')
+    posts = Post.objects.filter(user__userprofile__in=sticking_users).order_by(
+        "-timestamp"
+    )
 
     # Serialize the posts
-    post_serializer = PostSerializer(
-        posts, many=True, context={'request': request})
+    post_serializer = PostSerializer(posts, many=True, context={"request": request})
 
     return Response(post_serializer.data, status=status.HTTP_200_OK)
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def retrieve_post(request, post_id):
     try:
@@ -72,15 +72,15 @@ def retrieve_post(request, post_id):
         post = Post.objects.get(pk=post_id)
 
         # Serialize the post
-        post_serializer = PostSerializer(post, context={'request': request})
+        post_serializer = PostSerializer(post, context={"request": request})
 
         return Response(post_serializer.data, status=status.HTTP_200_OK)
 
     except Post.DoesNotExist:
-        return Response({'detail': 'Post not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"detail": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
 
 
-@api_view(['PUT'])
+@api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def update_post(request, post_id):
     try:
@@ -89,7 +89,10 @@ def update_post(request, post_id):
 
         # Check if the current user is the author of the post
         if post.user != request.user:
-            return Response({'detail': 'You do not have permission to update this post.'}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "You do not have permission to update this post."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         # Deserialize the request data and update the post
         post_serializer = PostSerializer(post, data=request.data, partial=True)
@@ -100,10 +103,10 @@ def update_post(request, post_id):
             return Response(post_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     except Post.DoesNotExist:
-        return Response({'detail': 'Post not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"detail": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
 
 
-@api_view(['DELETE'])
+@api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def delete_post(request, post_id):
     try:
@@ -112,18 +115,23 @@ def delete_post(request, post_id):
 
         # Check if the current user is the author of the post
         if post.user != request.user:
-            return Response({'detail': 'You do not have permission to delete this post.'}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "You do not have permission to delete this post."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         # Delete the post
         post.delete()
 
-        return Response({'detail': 'Post deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            {"detail": "Post deleted successfully."}, status=status.HTTP_204_NO_CONTENT
+        )
 
     except Post.DoesNotExist:
-        return Response({'detail': 'Post not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"detail": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
 
 
-@api_view(['PUT'])
+@api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def edit_post(request, post_id):
     try:
@@ -132,7 +140,10 @@ def edit_post(request, post_id):
 
         # Check if the request user is the author of the post
         if post.user != request.user:
-            return Response({'detail': 'You do not have permission to edit this post.'}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "You do not have permission to edit this post."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         # Update the post data with the request data
         post_serializer = PostSerializer(post, data=request.data)
@@ -143,12 +154,13 @@ def edit_post(request, post_id):
             return Response(post_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     except Post.DoesNotExist:
-        return Response({'detail': 'Post not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"detail": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
 
 
 # Admin posts
 
-@api_view(['POST'])
+
+@api_view(["POST"])
 @permission_classes([IsAdminUser])  # Only admin can create posts
 def admin_create_post(request):
     serializer = PostSerializer(data=request.data)
@@ -157,16 +169,17 @@ def admin_create_post(request):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 # View to view all posts
-@api_view(['GET'])
+@api_view(["GET"])
 def admin_view_posts(request):
     posts = Post.objects.all()
     serializer = PostSerializer(posts, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
-# View to edit a post
-@api_view(['PUT'])
 
+# View to edit a post
+@api_view(["PUT"])
 @permission_classes([IsAdminUser])  # Only admin can edit posts
 def admin_edit_post(request, post_id):
     try:
@@ -177,24 +190,27 @@ def admin_edit_post(request, post_id):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except Post.DoesNotExist:
-        return Response({'detail': 'Post not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"detail": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
+
 
 # View to delete a post
-@api_view(['DELETE'])
+@api_view(["DELETE"])
 @permission_classes([IsAdminUser])  # Only admin can delete posts
 def admin_delete_post(request, post_id):
     try:
         post = Post.objects.get(pk=post_id)
         post.delete()
-        return Response({'detail': 'Post deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            {"detail": "Post deleted successfully."}, status=status.HTTP_204_NO_CONTENT
+        )
     except Post.DoesNotExist:
-        return Response({'detail': 'Post not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"detail": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
 
 
 # End of Admin posts
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def create_comment(request, post_id):
     try:
@@ -203,9 +219,11 @@ def create_comment(request, post_id):
 
         # Create a new comment associated with the post and the current user
         comment_data = {
-            'text': request.data.get('text'),  # Replace 'text' with the field name for your comment content
-            'post': post,
-            'user': request.user,
+            "text": request.data.get(
+                "text"
+            ),  # Replace 'text' with the field name for your comment content
+            "post": post,
+            "user": request.user,
         }
 
         comment_serializer = CommentSerializer(data=comment_data)
@@ -213,13 +231,15 @@ def create_comment(request, post_id):
             comment_serializer.save()
             return Response(comment_serializer.data, status=status.HTTP_201_CREATED)
         else:
-            return Response(comment_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                comment_serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
 
     except Post.DoesNotExist:
-        return Response({'detail': 'Post not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"detail": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def view_comments(request, post_id):
     try:
@@ -235,7 +255,7 @@ def view_comments(request, post_id):
         return Response(comment_serializer.data, status=status.HTTP_200_OK)
 
     except Post.DoesNotExist:
-        return Response({'detail': 'Post not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"detail": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
 
 
 class PostMediaViewSet(viewsets.ModelViewSet):
@@ -259,7 +279,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def view_replies(request, post_id, comment_id):
     try:
@@ -275,10 +295,12 @@ def view_replies(request, post_id, comment_id):
         return Response(reply_serializer.data, status=status.HTTP_200_OK)
 
     except Comment.DoesNotExist:
-        return Response({'detail': 'Comment not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"detail": "Comment not found."}, status=status.HTTP_404_NOT_FOUND
+        )
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def create_reply(request, post_id, comment_id):
     try:
@@ -287,9 +309,11 @@ def create_reply(request, post_id, comment_id):
 
         # Create a new reply associated with the comment and the current user
         reply_data = {
-            'text': request.data.get('text'),  # Replace 'text' with the field name for your reply content
-            'comment': comment,
-            'user': request.user,
+            "text": request.data.get(
+                "text"
+            ),  # Replace 'text' with the field name for your reply content
+            "comment": comment,
+            "user": request.user,
         }
 
         reply_serializer = ReplySerializer(data=reply_data)
@@ -300,7 +324,10 @@ def create_reply(request, post_id, comment_id):
             return Response(reply_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     except Comment.DoesNotExist:
-        return Response({'detail': 'Comment not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"detail": "Comment not found."}, status=status.HTTP_404_NOT_FOUND
+        )
+
 
 class ReplyViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
@@ -315,14 +342,16 @@ class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
 
-    @action(detail=True, methods=['POST'])
+    @action(detail=True, methods=["POST"])
     def share_post(self, request, pk=None):
         post = self.get_object()
-        
+
         # Create a new Share instance to record the sharing
         SharePost.objects.create(user=request.user, shared_post=post)
-        
-        return Response({"detail": "Post shared successfully."}, status=status.HTTP_201_CREATED)
+
+        return Response(
+            {"detail": "Post shared successfully."}, status=status.HTTP_201_CREATED
+        )
 
 
 class RepostViewSet(viewsets.ModelViewSet):
@@ -339,124 +368,154 @@ class SavedPostViewSet(viewsets.ModelViewSet):
     serializer_class = SavedPostSerializer
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def add_reaction(request, content_type, object_id, reaction_type):
     try:
         # Determine the content type (Comment, Reply, or Post)
-        if content_type == 'comment':
+        if content_type == "comment":
             content_object = Comment.objects.get(pk=object_id)
-        elif content_type == 'reply':
+        elif content_type == "reply":
             content_object = Reply.objects.get(pk=object_id)
-        elif content_type == 'post':
+        elif content_type == "post":
             content_object = Post.objects.get(pk=object_id)
         else:
-            return Response({'detail': 'Invalid content type.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Invalid content type."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Check if a reaction of the same type already exists for the user and content object
         existing_reaction = Reaction.objects.filter(
-            user=request.user, content_type=content_type, object_id=object_id, reaction_type=reaction_type
+            user=request.user,
+            content_type=content_type,
+            object_id=object_id,
+            reaction_type=reaction_type,
         ).first()
 
         if existing_reaction:
             # If a reaction of the same type exists, remove it (toggle)
             existing_reaction.delete()
-            return Response({'detail': 'Reaction removed successfully.'}, status=status.HTTP_204_NO_CONTENT)
+            return Response(
+                {"detail": "Reaction removed successfully."},
+                status=status.HTTP_204_NO_CONTENT,
+            )
         else:
             # Create a new reaction
             reaction_data = {
-                'user': request.user,
-                'content_type': content_type,
-                'object_id': object_id,
-                'reaction_type': reaction_type,
+                "user": request.user,
+                "content_type": content_type,
+                "object_id": object_id,
+                "reaction_type": reaction_type,
             }
 
             reaction_serializer = ReactionSerializer(data=reaction_data)
             if reaction_serializer.is_valid():
                 reaction_serializer.save()
-                return Response(reaction_serializer.data, status=status.HTTP_201_CREATED)
+                return Response(
+                    reaction_serializer.data, status=status.HTTP_201_CREATED
+                )
             else:
-                return Response(reaction_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    reaction_serializer.errors, status=status.HTTP_400_BAD_REQUEST
+                )
 
     except Comment.DoesNotExist:
-        return Response({'detail': 'Comment not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"detail": "Comment not found."}, status=status.HTTP_404_NOT_FOUND
+        )
     except Reply.DoesNotExist:
-        return Response({'detail': 'Reply not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"detail": "Reply not found."}, status=status.HTTP_404_NOT_FOUND
+        )
     except Post.DoesNotExist:
-        return Response({'detail': 'Post not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"detail": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_reactions(request, content_type, object_id):
     try:
         # Determine the content type (Comment, Reply, or Post)
         content_type = content_type.lower()
-        if content_type not in ['comment', 'reply', 'post']:
-            return Response({'detail': 'Invalid content type.'}, status=status.HTTP_400_BAD_REQUEST)
+        if content_type not in ["comment", "reply", "post"]:
+            return Response(
+                {"detail": "Invalid content type."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Retrieve reactions for the specified content object
-        if content_type == 'post':
+        if content_type == "post":
             content_object = Post.objects.get(pk=object_id)
-        elif content_type == 'comment':
+        elif content_type == "comment":
             content_object = Comment.objects.get(pk=object_id)
-        elif content_type == 'reply':
+        elif content_type == "reply":
             content_object = Reply.objects.get(pk=object_id)
 
         # Retrieve reactions associated with the content object
         reactions = Reaction.objects.filter(content_object=content_object)
 
         # Count the number of users who reacted
-        reacting_users_count = reactions.values('user').distinct().count()
+        reacting_users_count = reactions.values("user").distinct().count()
 
         # Serialize the reactions
         reaction_serializer = ReactionSerializer(reactions, many=True)
 
         # Get the list of users reacting to the content
-        reacting_users = reactions.values('user').distinct()
-        user_ids = [user['user'] for user in reacting_users]
+        reacting_users = reactions.values("user").distinct()
+        user_ids = [user["user"] for user in reacting_users]
 
         # Serialize the user IDs and their reactions
         user_reactions = []
         for user_id in user_ids:
             user = User.objects.get(pk=user_id)
-            user_reactions.append({
-                'user_id': user_id,
-                'username': user.username,
-                'reactions': [r['reaction_type'] for r in reactions.filter(user=user)],
-            })
+            user_reactions.append(
+                {
+                    "user_id": user_id,
+                    "username": user.username,
+                    "reactions": [
+                        r["reaction_type"] for r in reactions.filter(user=user)
+                    ],
+                }
+            )
 
-        return Response({
-            'reacting_users_count': reacting_users_count,
-            'reactions': reaction_serializer.data,
-            'reacting_users': user_reactions,  # Include the list of users reacting
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "reacting_users_count": reacting_users_count,
+                "reactions": reaction_serializer.data,
+                "reacting_users": user_reactions,  # Include the list of users reacting
+            },
+            status=status.HTTP_200_OK,
+        )
 
     except (Post.DoesNotExist, Comment.DoesNotExist, Reply.DoesNotExist):
-        return Response({'detail': 'Content object not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"detail": "Content object not found."}, status=status.HTTP_404_NOT_FOUND
+        )
 
 
-
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def create_or_update_reaction(request, object_type, object_id):
     try:
         user = request.user
         reaction_data = request.data
-        reaction_data['user'] = user.id  # Add user ID to the reaction data
+        reaction_data["user"] = user.id  # Add user ID to the reaction data
 
         # Determine the object type (post, comment, or reply) and object instance
-        if object_type == 'post':
+        if object_type == "post":
             obj = Post.objects.get(pk=object_id)
-        elif object_type == 'comment':
+        elif object_type == "comment":
             obj = Comment.objects.get(pk=object_id)
-        elif object_type == 'reply':
+        elif object_type == "reply":
             obj = Reply.objects.get(pk=object_id)
         else:
-            return Response({'detail': 'Invalid object type.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Invalid object type."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Check if a reaction already exists for this user and object
-        existing_reaction = Reaction.objects.filter(user=user, object_id=object_id).first()
+        existing_reaction = Reaction.objects.filter(
+            user=user, object_id=object_id
+        ).first()
 
         if existing_reaction:
             # If a reaction exists, update it with the new reaction type
@@ -472,34 +531,42 @@ def create_or_update_reaction(request, object_type, object_id):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     except Post.DoesNotExist:
-        return Response({'detail': 'Object not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"detail": "Object not found."}, status=status.HTTP_404_NOT_FOUND
+        )
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def toggle_reaction(request, object_type, object_id):
     try:
         user = request.user
         reaction_data = request.data
-        reaction_data['user'] = user.id
+        reaction_data["user"] = user.id
 
         # Determine the object type (post, comment, or reply) and object instance
-        if object_type == 'post':
+        if object_type == "post":
             obj = Post.objects.get(pk=object_id)
-        elif object_type == 'comment':
+        elif object_type == "comment":
             obj = Comment.objects.get(pk=object_id)
-        elif object_type == 'reply':
+        elif object_type == "reply":
             obj = Reply.objects.get(pk=object_id)
         else:
-            return Response({'detail': 'Invalid object type.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Invalid object type."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Check if a reaction already exists for this user and object
-        existing_reaction = Reaction.objects.filter(user=user, object_id=object_id).first()
+        existing_reaction = Reaction.objects.filter(
+            user=user, object_id=object_id
+        ).first()
 
         if existing_reaction:
             # If a reaction exists, delete it
             existing_reaction.delete()
-            return Response({'detail': 'Reaction removed.'}, status=status.HTTP_204_NO_CONTENT)
+            return Response(
+                {"detail": "Reaction removed."}, status=status.HTTP_204_NO_CONTENT
+            )
         else:
             # If no reaction exists, create a new one
             serializer = ReactionSerializer(data=reaction_data)
@@ -511,21 +578,22 @@ def toggle_reaction(request, object_type, object_id):
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     except Post.DoesNotExist:
-        return Response({'detail': 'Object not found.'}, status=status.HTTP_404_NOT_FOUND)
-
+        return Response(
+            {"detail": "Object not found."}, status=status.HTTP_404_NOT_FOUND
+        )
 
 
 # Search Post
 class PostSearchAPIView(APIView):
     def get(self, request):
-        query = request.query_params.get('query', '')
+        query = request.query_params.get("query", "")
 
         if query:
             # Perform a case-insensitive search across relevant fields in the database
             results = Post.objects.filter(
-                Q(user__icontains=query) |
-                Q(content__icontains=query) |
-                Q(hashtag__icontains=query)
+                Q(user__icontains=query)
+                | Q(content__icontains=query)
+                | Q(hashtag__icontains=query)
             )
             serializer = PostSerializer(results, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -548,7 +616,9 @@ class DocumentPostViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         # Filter posts to include only those with document file extensions
-        return Post.objects.filter(file__media__name__endswith=tuple(document_extensions))
+        return Post.objects.filter(
+            file__media__name__endswith=tuple(document_extensions)
+        )
 
 
 class AudioPostViewSet(viewsets.ReadOnlyModelViewSet):
@@ -560,23 +630,25 @@ class AudioPostViewSet(viewsets.ReadOnlyModelViewSet):
         return Post.objects.filter(file__media__name__endswith=tuple(audio_extensions))
 
 
-
 class ImagePostViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ImagePostSerializer
     queryset = Post.objects.all()
 
-    def get_queryset(self):
-        # Filter posts to include only those with image file extensions
-        return Post.objects.filter(file__media__name__endswith=tuple(image_extensions))
+    # def get_queryset(self):
+    #     # Filter posts to include only those with image file extensions
+    #     return Post.objects.filter(
+    #         file__media__filename__endswith=tuple(image_extensions)
+    #     )
 
 
 class OtherPostViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = OtherPostSerializer
     queryset = Post.objects.all()
 
-    def get_queryset(self):
-        return Post.objects.filter(file__media__name__endswith=tuple(others_extensions))
-
+    # def get_queryset(self):
+    #     return Post.objects.filter(
+    #         file__media__filename__endswith=tuple(others_extensions)
+    #     )
 
 
 class PromotePostViewSet(viewsets.ModelViewSet):
@@ -585,8 +657,10 @@ class PromotePostViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         # Get the selected promotion plan ID and post ID from the request
-        plan_id = request.data.get('plan_id')
-        post_id = request.data.get('post_id')  # Assuming you expect 'post_id' in the request
+        plan_id = request.data.get("plan_id")
+        post_id = request.data.get(
+            "post_id"
+        )  # Assuming you expect 'post_id' in the request
 
         try:
             # Retrieve the selected promotion plan
@@ -605,35 +679,40 @@ class PromotePostViewSet(viewsets.ModelViewSet):
             transaction_response = Transaction.initialize(**transaction_params)
 
             # Return the Paystack authorization URL to the frontend
-            return Response({'authorization_url': transaction_response['data']['authorization_url']})
+            return Response(
+                {"authorization_url": transaction_response["data"]["authorization_url"]}
+            )
 
         except PromotionPlan.DoesNotExist:
-            return Response({'detail': 'Promotion plan not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "Promotion plan not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
 
 class PaystackCallbackView(APIView):
     def get(self, request):
-        reference = request.GET.get('reference')
+        reference = request.GET.get("reference")
 
         # Verify the payment status with Paystack
         verify_response = Transaction.verify(reference)
 
-        if verify_response['data']['status'] == 'success':
+        if verify_response["data"]["status"] == "success":
             # Payment was successful, create the promoted post record
 
             # Extract the post_id from the metadata
-            post_id = verify_response['data']['metadata']['post_id']
+            post_id = verify_response["data"]["metadata"]["post_id"]
 
             # Create the promoted post record here and update promotion_status
 
             # Send a notification to the user
             user = request.user  # Assuming you have the user available in the request
-            message = 'Your post has been successfully promoted!'
+            message = "Your post has been successfully promoted!"
             send_post_promotion_notification(user, message)
 
-            return Response({'detail': 'Payment successful.'})
+            return Response({"detail": "Payment successful."})
         else:
-            return Response({'detail': 'Payment failed.'})
+            return Response({"detail": "Payment failed."})
 
 
 class UserPostsView(ListAPIView):

@@ -1,25 +1,23 @@
 from django.contrib import admin
-from .models import *
-from import_export.admin import ImportExportModelAdmin
+
+from . import models as m
 
 
-# Register your models here.
-@admin.register(BusinessDirectory)
-class BusinessDirectoryAdmin(ImportExportModelAdmin):
-    list_display = ('name', 'address', 'phone_number', 'about', 'email', 'website')
+@admin.register(m.BusinessAccount)
+class BusinessAccountAdmin(admin.ModelAdmin):
+    list_display = ["user", "business_name", "business_email", "is_verified"]
 
-@admin.register(BusinessOwnerProfile)
-class BusinessOwnerProfileAdmin(ImportExportModelAdmin):
-    list_display = ('user', 'first_name', 'last_name', 'phone_number', 'email')
 
-@admin.register(BusinessDocument)
-class BusinessDocumentAdmin(ImportExportModelAdmin):
-    list_display = ('business', 'document_type', 'document_file')
+@admin.register(m.BusinessCategory)
+class BusinessCategory(admin.ModelAdmin):
+    list_display = ["name"]
 
-@admin.register(Address)
-class AddressAdmin(ImportExportModelAdmin):
-    list_display = ('street', 'city', 'state', 'country')
 
-@admin.register(PhoneNumber)
-class PhoneNumberAdmin(ImportExportModelAdmin):
-    list_display = ('phone_number1', 'phone_number2', 'phone_number3', 'phone_number4')
+@admin.register(m.BusinessDayAvailability)
+class BusinessDayAvailabilityAdmin(admin.ModelAdmin):
+    list_display = ["business"]
+
+
+@admin.register(m.BusinessTimeAvailability)
+class BusinessTimeAvailabilityAdmin(admin.ModelAdmin):
+    list_display = ["open_from", "close_at"]

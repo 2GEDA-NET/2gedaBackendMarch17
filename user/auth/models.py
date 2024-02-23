@@ -86,24 +86,21 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractUser):
-    # email = models.EmailField(unique=True, null=True, blank=True)
     email = models.EmailField(unique=True)
-    is_business = models.BooleanField(default=False, verbose_name="Business Account")
-    is_personal = models.BooleanField(default=False, verbose_name="Personal Account")
-    is_admin = models.BooleanField(default=False, verbose_name="Admin Account")
-    phone_number = models.CharField(unique=True, max_length=20)
-    # phone_number = models.BigIntegerField(unique=True, null=True, blank=True)
-    is_verified = models.BooleanField(default=False, verbose_name="Verified")
-    last_seen = models.DateTimeField(null=True, blank=True)
-    # otp = models.CharField(max_length=5, blank=True)
-    # otp_verified = models.BooleanField(default=False)
+    is_business = models.BooleanField(_("Business Account"), default=False)
+    is_personal = models.BooleanField(_("Personal Account"), default=False)
+    is_admin = models.BooleanField(_("Admin Account"), default=False)
+    phone_number = models.CharField(
+        _("Phone Number"), unique=True, max_length=20, blank=True, null=True
+    )
+    is_verified = models.BooleanField(_("Verified"), default=False)
     secret_key = models.CharField(max_length=64)
 
     objects = UserManager()
 
     USERNAME_FIELD = "email"
     EMAIL_FIELD = "email"
-    REQUIRED_FIELDS = ["phone_number"]
+    REQUIRED_FIELDS = []
 
     class Meta:
         swappable = "AUTH_USER_MODEL"
@@ -127,7 +124,7 @@ class User(AbstractUser):
 class OneTimePassword(models.Model):
     VERIFICATION_TYPE_OPTIONS = [
         ("account_verification", "Email Verification"),
-        ("password_verification", "Password Verification"),
+        ("password_reset", "Password Reset"),
     ]
     user = models.ForeignKey(
         User,

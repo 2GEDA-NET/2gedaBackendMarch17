@@ -1,14 +1,19 @@
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from . import views
+
+from . import api
+
+app_name = "business"
 
 router = DefaultRouter()
-router.register(r'addresses', views.AddressViewSet)
-router.register(r'phone_numbers', views.PhoneNumberViewSet)
-router.register(r'business_directories', views.BusinessDirectoryViewSet)
+router.register("", api.BusinessAccountAPI, basename="business")
+router.register("categories", api.BusinessCategoryAPI, basename="categories")
+router.register(
+    "business-owner", api.BusinessOwnerProfileAPI, basename="business_owner"
+)
 
 urlpatterns = [
-    path('', include(router.urls)),
-    path('claim-business/', views.BusinessClaimView.as_view(), name='claim-business'),
-
+    # path("", api.BusinessAccountAPI.as_view(), name="business"),
+    # path("categories/", api.BusinessCategoryAPI.as_view(), name="categories"),
+    path("", include(router.urls)),
 ]

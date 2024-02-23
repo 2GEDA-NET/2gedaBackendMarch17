@@ -1,15 +1,16 @@
+from django.db.models import Q
 from django.utils import timezone
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, views, viewsets
+from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.authtoken.models import Token
 
 # from ..account.models import User
-from . import serializers as s
 from . import models as m
+from . import serializers as s
 
 
 class UserRegistrationAPI(views.APIView):
@@ -22,12 +23,23 @@ class UserRegistrationAPI(views.APIView):
         responses={201: s.UserRegistrationSerializer},
     )
     def post(self, request, *args, **kwargs):
+        response = {}
+        status_code = None
         serializer = s.UserRegistrationSerializer(
             data=request.data, context={"request": request}
         )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        if serializer.is_valid():
+            serializer.save()
+            response["message"] = "Registration successful."
+            response["status"] = True
+            response["data"] = serializer.data
+            status_code = status.HTTP_201_CREATED
+        else:
+            response["message"] = "User registration fail."
+            response["status"] = False
+            response["data"] = serializer.errors
+            status_code = status.HTTP_400_BAD_REQUEST
+        return Response(response, status=status_code)
 
 
 class UserLoginAPI(views.APIView):
@@ -55,22 +67,34 @@ class UserLoginAPI(views.APIView):
         request_body=request_body, responses={200: s.UserLoginSerializer}
     )
     def post(self, request, *args, **kwargs):
-        user = m.User.objects.filter(email=request.data.get("email"))
+        email = request.data.get("email", "").lower().strip()
+        user = m.User.objects.filter(Q(email=email) | Q(username=email))
         password = request.data.get("password")
+
+        response = {}
+        status_code = None
 
         if user.exists() and user.first().check_password(password):
             serializer = s.UserLoginSerializer(data=request.data)
             if serializer.is_valid():
                 user = user.first()
+                response["message"] = "User login successful."
+                response["status"] = True
+                response["data"] = serializer.data
+                status_code = status.HTTP_200_OK
                 user.last_login = timezone.now()
                 user.save()
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response(
-            {"message": "Incorrect email or password."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+            else:
+                response["message"] = "Login fail."
+                response["status"] = False
+                response["data"] = serializer.errors
+                status_code = status.HTTP_400_BAD_REQUEST
+            return Response(response, status=status_code)
+        else:
+            response["message"] = "Incorrect credentials."
+            response["status"] = False
+            status_code = status.HTTP_401_UNAUTHORIZED
+            return Response(response, status=status_code)
 
 
 class AuthenticationViewSet(viewsets.GenericViewSet):
@@ -88,8 +112,8 @@ class AuthenticationViewSet(viewsets.GenericViewSet):
             in_=openapi.IN_QUERY,
             type=openapi.TYPE_STRING,
             description="*NOTE*: `account_verification` for new user "
-            "and `password_verification` for user password reset.",
-            enum=["account_verification", "password_verification"],
+            "and `password_reset` for user password reset.",
+            enum=["account_verification", "password_reset"],
             required=True,
         )
     ]
@@ -136,7 +160,7 @@ class AuthenticationViewSet(viewsets.GenericViewSet):
             user = user.first()
             otp = user.generate_otp()
             m.OneTimePassword.objects.create(
-                user=user, otp=otp, verification_type="password_verification"
+                user=user, otp=otp, verification_type="password_reset"
             ).send_code()
             return Response(
                 {"message": "Password reset email sent.", "status": True},
@@ -186,12 +210,12 @@ class AuthenticationViewSet(viewsets.GenericViewSet):
         verification_type = request.GET.get("verification_type")
         if not verification_type and verification_type not in [
             "account_verification",
-            "password_verification",
+            "password_reset",
         ]:
             return Response(
                 {
                     "message": "Must provide verification_type params: "
-                    "email_verification or password_verification."
+                    "account_verification or password_reset."
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )

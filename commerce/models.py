@@ -6,7 +6,8 @@ from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
-from user.account.models import Address, BusinessAccount
+from user.account.models import UserAddress
+from business.models import BusinessAccount
 
 User = get_user_model()
 
@@ -204,7 +205,7 @@ class DeliveryAddress(models.Model):
     )
     address_type = models.CharField(max_length=1, choices=ADDRESS_CHOICES)
     default = models.BooleanField(default=False)
-    address = models.ForeignKey(Address, on_delete=models.CASCADE)
+    address = models.ForeignKey(UserAddress, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
