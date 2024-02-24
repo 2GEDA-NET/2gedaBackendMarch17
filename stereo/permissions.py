@@ -8,7 +8,7 @@ class HasStereoAccountPermission(BasePermission):
 
     def has_permission(self, request, view):
         try:
-            permission = hasattr(request.user.profile, "stereo_account")
+            permission = hasattr(request.user.profile, "artist")
         except AttributeError:
             # user is anonymous user
             return False

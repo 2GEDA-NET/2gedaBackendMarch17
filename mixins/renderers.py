@@ -1,3 +1,7 @@
+"""
+Custom Mixin to change how the response render the serialized data.
+"""
+
 from rest_framework import mixins, status
 from rest_framework.response import Response
 
@@ -60,6 +64,10 @@ class DestroyModelRenderer(mixins.CreateModelMixin):
 
 
 class ListCreateModelRenderer(CreateModelRenderer, ListModelRenderer):
+    pass
+
+
+class ReadOnlyModelRenderer(ListModelRenderer, RetrieveModelRenderer):
     pass
 
 

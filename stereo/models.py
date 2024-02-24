@@ -3,44 +3,40 @@ from django.utils.translation import gettext as _
 
 from user.account.models import UserProfile
 
-# class StereoAccount(models.Model):
-#     profile = models.OneToOneField(
-#         to=UserProfile,
-#         on_delete=models.CASCADE,
-#         verbose_name=_("User Profile"),
-#         related_name="stereo_account",
-#     )
-#     created_at = models.DateTimeField(auto_now_add=True)
-
-#     def __str__(self) -> str:
-#         return self.profile.user.email
-
 
 class Library(models.Model):
+
     profile = models.OneToOneField(
         to=UserProfile, on_delete=models.CASCADE, verbose_name=_("User Profile")
     )
 
 
 class Artist(models.Model):
+
     profile = models.OneToOneField(
-        to=UserProfile, on_delete=models.CASCADE, verbose_name=_("User Profile")
+        to=UserProfile,
+        on_delete=models.CASCADE,
+        verbose_name=_("User Profile"),
+        related_name="artist",
     )
     artist_name = models.CharField(
         _("Artist Name"), max_length=50, blank=True, null=True
     )
     about = models.TextField(_("About"), blank=True, null=True)
-    picture = models.ImageField(_("Picture"), blank=True, null=True)
-    stickers = models.PositiveIntegerField(_("Stickers"), default=0)
-    # library = models.ForeignKey(to=Library, verbose_name=_("Library"))
+    brand_image = models.ImageField(_("Brand Image"), blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
         return self.artist_name
 
+    @property
+    def stickers(self):
+        return 0  # TODO coming back to this
+
 
 class SongCategory(models.Model):
+
     name = models.CharField(_("Category Name"), max_length=100)
     description = models.CharField(_("Description"), max_length=500)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -61,8 +57,12 @@ class SongManager(models.Manager):
     def recent_uploads(self):
         pass
 
+    def trending(self):
+        return self.get_queryset().order_by("-created_at")
+
 
 class Song(models.Model):
+
     title = models.CharField(_("Song Title"), max_length=100)
     artist = models.ForeignKey(
         to=Artist,
@@ -71,7 +71,7 @@ class Song(models.Model):
         blank=True,
         null=True,
     )
-    duration = models.CharField(_("Duration"), max_length=20, blank=True, null=True)
+    # duration = models.CharField(_("Duration"), max_length=20, blank=True, null=True)
     category = models.ManyToManyField(to=SongCategory, verbose_name=_("Category"))
     cover_image = models.ImageField(
         _("Cover Image"), upload_to="song-cover-images", blank=True, null=True
@@ -80,18 +80,14 @@ class Song(models.Model):
         _("Song File"), upload_to="songs", blank=True, null=True
     )
     likes = models.ManyToManyField(
-        to=UserProfile, verbose_name=_("Downloads"), blank=True, null=True
+        to=UserProfile, verbose_name=_("Likes"), related_name="likes"
     )
     downloads = models.ManyToManyField(
-        to=UserProfile, verbose_name=_("Downloads"), blank=True, null=True
+        to=UserProfile, verbose_name=_("Downloads"), related_name="downloads"
     )
     plays = models.ManyToManyField(
-        to=UserProfile, verbose_name=_("Plays"), blank=True, null=True
+        to=UserProfile, verbose_name=_("Plays"), related_name="plays"
     )
-    stickers = models.ManyToManyField(
-        to=UserProfile, verbose_name=_("Stickers"), blank=True, null=True
-    )
-    download_count = models.PositiveIntegerField(_("Download Count"), default=0)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     objects = SongManager()
@@ -100,27 +96,13 @@ class Song(models.Model):
         return self.title
 
     @property
-    def likes(self):
-        # getter for likes attribute
-        return 10  # placeholder
-
-    @property
-    def downloads(self):
-        # getter for downloads attr
-        return 10
-
-    @property
-    def plays(self):
-        # getter for plays attr
-        return 10
-
-    @property
-    def stickers(self):
-        # getter for stickers attr
+    def duration(self):
+        # TODO calculate the song duration
         return 10
 
 
 class Playlist(models.Model):
+
     name = models.CharField(_("Name"), max_length=100)
     description = models.CharField(
         _("Description"), max_length=1000, blank=True, null=True
@@ -152,6 +134,7 @@ class Playlist(models.Model):
 
 
 class Album(models.Model):
+
     name = models.CharField(_("Name"), max_length=100)
     about = models.TextField(_("About"), blank=True, null=True)
     artist = models.ForeignKey(

@@ -79,6 +79,14 @@ class UserProfile(models.Model):
         return self.stickers.count()
 
     @property
+    def profile_image(self):
+        try:
+            url = self.profile_picture.url
+        except ValueError:
+            url = ""
+        return url
+
+    @property
     def sticking_count(self):
         return 0  # TODO coming to this later
 
