@@ -47,7 +47,7 @@ api_routes = [
     # path("chat/", include("chat.urls")),
     # path("business/", include("business.urls", namespace="business")),
     # path("education/", include("education.urls")),
-    # path("poll/", include("poll.urls")),
+    # path("polls/", include("poll.urls", namespace="poll")),
     path("stereo/", include("stereo.urls")),
     # path("reward/", include(reward_url)),
     # path("utils/", include(utils_url)),

@@ -36,7 +36,7 @@ class CreateModelRenderer(mixins.CreateModelMixin):
         )
 
 
-class UpdateModelRenderer(mixins.CreateModelMixin):
+class UpdateModelRenderer(mixins.UpdateModelMixin):
 
     def update(self, request, *args, **kwargs):
         data = super().update(request, *args, **kwargs).data
@@ -53,12 +53,12 @@ class UpdateModelRenderer(mixins.CreateModelMixin):
         )
 
 
-class DestroyModelRenderer(mixins.CreateModelMixin):
+class DestroyModelRenderer(mixins.DestroyModelMixin):
 
     def destroy(self, request, *args, **kwargs):
         data = super().destroy(request, *args, **kwargs).data
         return Response(
-            {"message": "Updated", "status": True, "data": data},
+            {"message": "Deleted", "status": True, "data": data},
             status=status.HTTP_200_OK,
         )
 

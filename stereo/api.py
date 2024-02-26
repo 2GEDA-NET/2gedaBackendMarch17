@@ -38,7 +38,7 @@ class ArtistAPI(renderers.ReadOnlyModelRenderer, viewsets.GenericViewSet):
         data = {"message": "Created", "status": True, "data": serializer.data}
         return Response(data, status=status.HTTP_201_CREATED)
 
-    @decorators.action(methods=["GET"], detail=False, url_path="<artist_id>/stick")
+    @decorators.action(methods=["GET"], detail=True, url_path="stick")
     def stick(self, request, *args, **kwargs):
         artist_id = kwargs.get("artist_id", 0)
         artist = m.Artist.objects.filter(pk=int(artist_id))
@@ -53,7 +53,7 @@ class ArtistAPI(renderers.ReadOnlyModelRenderer, viewsets.GenericViewSet):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    @decorators.action(methods=["GET"], detail=False, url_path="<artist_id>/unstick")
+    @decorators.action(methods=["GET"], detail=True, url_path="unstick")
     def unstick(self, request, *args, **kwargs):
         artist_id = kwargs.get("artist_id", 0)
         artist = m.Artist.objects.filter(pk=int(artist_id))
@@ -115,15 +115,15 @@ class SongAPI(renderers.CrudModelRenderer, viewsets.GenericViewSet):
             {"message": "Not Found", "status": False}, status=status.HTTP_404_NOT_FOUND
         )
 
-    @decorators.action(methods=["GET"], detail=False, url_path="<song_id>/download")
+    @decorators.action(methods=["GET"], detail=True, url_path="download")
     def download(self, request, *args, **kwargs):
         pass
 
-    @decorators.action(methods=["GET"], detail=False, url_path="<song_id>/play")
+    @decorators.action(methods=["GET"], detail=True, url_path="play")
     def play(self, request, *args, **kwargs):
         pass
 
-    @decorators.action(methods=["GET"], detail=False, url_path="<song_id>/like")
+    @decorators.action(methods=["GET"], detail=True, url_path="like")
     def like(self, request, *args, **kwargs):
         pass
 

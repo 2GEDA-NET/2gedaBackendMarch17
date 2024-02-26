@@ -11,6 +11,21 @@ class SongLibrarySerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class SongCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = m.SongCategory
+        fields = "__all__"
+
+    def to_representation(self, instance):
+        return super().to_representation(instance)
+
+
+class WriteOnlySongSerializer(serializers.Serializer):
+    title = serializers.CharField()
+    category = SongCategorySerializer()
+    song_file = serializers.FileField()
+
+
 class ArtistSerializer(serializers.ModelSerializer):
     # profile = UserProfileSerializer(read_only=True)
 
@@ -35,15 +50,6 @@ class MinimalArtistSerializer(serializers.ModelSerializer):
         return data
 
 
-class SongCategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = m.SongCategory
-        fields = "__all__"
-
-    def to_representation(self, instance):
-        return super().to_representation(instance)
-
-
 class SongSerializer(serializers.ModelSerializer):
     artist = MinimalArtistSerializer(read_only=True)
     categories = serializers.SerializerMethodField()
@@ -66,6 +72,8 @@ class SongSerializer(serializers.ModelSerializer):
 
 
 class AlbumSerializer(serializers.ModelSerializer):
+    songs = serializers.ListField(child=WriteOnlySongSerializer())
+
     class Meta:
         model = m.Album
-        fields = "__all__"
+        fields = ["name", "about", "songs"]

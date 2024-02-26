@@ -158,7 +158,7 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         # "rest_framework.authentication.BasicAuthentication",
         # "rest_framework.authentication.SessionAuthentication",
-        "rest_framework.authentication.TokenAuthentication",
+        # "rest_framework.authentication.TokenAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         # "rest_framework.permissions.IsAuthenticated",
@@ -214,8 +214,8 @@ if not config("SEND_EMAIL", cast=bool):
     # EMAIL_HOST = "mail.2geda.net"
     EMAIL_USE_TLS = True
     EMAIL_PORT = 587
-    EMAIL_HOST_USER = "deepraisegee@gmail.com"
-    EMAIL_HOST_PASSWORD = "shjieafdhhlaezgc"
+    EMAIL_HOST_USER = config("EMAIL_HOST_USER")
+    EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
     EMAIL_FILE_PATH = os.path.join(BASE_DIR, "sent_emails")
     # Email Configuration
     # EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
