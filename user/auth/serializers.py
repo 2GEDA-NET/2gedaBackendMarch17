@@ -25,7 +25,7 @@ class UserSerializer(serializers.ModelSerializer):
         }
 
 
-class WriteOnlyUserSerializer(serializers.Serializer):
+class ReadOnlyUserSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     first_name = serializers.CharField(read_only=True)
     last_name = serializers.CharField(read_only=True)

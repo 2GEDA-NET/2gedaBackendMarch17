@@ -1,5 +1,5 @@
 """
-Custom Mixin to change how the response render the serialized data.
+Custom Mixins to change how the response render the serialized data.
 """
 
 from rest_framework import mixins, status

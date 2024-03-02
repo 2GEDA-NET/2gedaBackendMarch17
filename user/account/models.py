@@ -72,7 +72,7 @@ class UserProfile(models.Model):
     updated_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.user.username
+        return self.user.username or self.user.email or "-"
 
     @property
     def stickers_count(self):
@@ -131,7 +131,7 @@ class UserAddress(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
-        return self.street_address
+        return f"{self.profile} Address"
 
     class Meta:
         verbose_name = _("User Address")

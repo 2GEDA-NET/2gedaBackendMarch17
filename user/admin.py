@@ -8,10 +8,10 @@ from .auth.models import OneTimePassword, User
 @admin.register(User)
 class UsersAdmin(ImportExportModelAdmin):
     list_display = (
+        "email",
         "username",
         "first_name",
         "last_name",
-        "email",
         "phone_number",
         "is_business",
         "is_personal",

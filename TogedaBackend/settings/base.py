@@ -138,9 +138,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
-    "user.authentication_backends.BusinessAccountAuthBackend",
     "user.auth.backends.UsernameAuthBackend",
-    "user.authentication_backends.CustomAuthBackend",
+    # "user.authentication_backends.BusinessAccountAuthBackend",
+    # "user.authentication_backends.CustomAuthBackend",
 ]
 
 FROM_EMAIL = "2gedafullstack@gmail.com"
@@ -158,10 +158,10 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         # "rest_framework.authentication.BasicAuthentication",
         # "rest_framework.authentication.SessionAuthentication",
-        # "rest_framework.authentication.TokenAuthentication",
+        "rest_framework.authentication.TokenAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
-        # "rest_framework.permissions.IsAuthenticated",
+        "rest_framework.permissions.IsAuthenticated",
     ],
     "DEFAULT_PARSER_CLASSES": [
         "rest_framework.parsers.FormParser",
@@ -208,22 +208,30 @@ TWILIO_ACCOUNT_SID = config("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = config("TWILIO_AUTH_TOKEN")
 TWILIO_PHONE_NUMBER = config("TWILIO_PHONE_NUMBER")
 
-if not config("SEND_EMAIL", cast=bool):
-    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-    EMAIL_HOST = "smtp.gmail.com"
-    # EMAIL_HOST = "mail.2geda.net"
-    EMAIL_USE_TLS = True
-    EMAIL_PORT = 587
-    EMAIL_HOST_USER = config("EMAIL_HOST_USER")
-    EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
-    EMAIL_FILE_PATH = os.path.join(BASE_DIR, "sent_emails")
-    # Email Configuration
+if config("SEND_EMAIL", cast=bool):
     # EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    # EMAIL_HOST = "mail.2geda.net"
+    # EMAIL_HOST_USER = "support@2geda.net"
+    # EMAIL_HOST_PASSWORD = "mO0rxQrNG*#7"
+    # DEFAULT_FROM_EMAIL = "support@2geda.net"
+    # SERVER_EMAIL = "mail.2geda.net"
+    EMAIL_HOST = "smtp.gmail.com"
+    EMAIL_HOST_USER = "deepraisegee@gmail.com"
+    EMAIL_HOST_PASSWORD = "shjieafdhhlaezgc"
+    EMAIL_PORT = 465
+    # EMAIL_USE_TLS = False
+    EMAIL_USE_SSL = True
+    # EMAIL_FILE_PATH = os.path.join(BASE_DIR, "sent_emails")
+
+    print("SENDING EMAIL------------------------")
+    # SERVER_EMAIL = config("SERVER_EMAIL")
     # EMAIL_HOST = config("EMAIL_HOST")
-    # EMAIL_PORT = config("EMAIL_PORT", cast=int)
-    # EMAIL_USE_TLS = config("EMAIL_USE_TLS", cast=bool)
     # EMAIL_HOST_USER = config("EMAIL_HOST_USER")
     # EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
+    # EMAIL_USE_TLS = config("EMAIL_USE_TLS", cast=bool)
+    # EMAIL_USE_SSL = config("EMAIL_USE_SSL", cast=bool)
+    # EMAIL_PORT = config("EMAIL_PORT", cast=int)
+    # DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL")
     # EMAIL_FILE_PATH = os.path.join(BASE_DIR, "sent_emails")
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

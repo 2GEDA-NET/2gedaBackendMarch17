@@ -102,11 +102,11 @@ class User(AbstractUser):
     EMAIL_FIELD = "email"
     REQUIRED_FIELDS = []
 
-    class Meta:
-        swappable = "AUTH_USER_MODEL"
+    # class Meta:
+    #     swappable = "AUTH_USER_MODEL"
 
     def __str__(self):
-        return str(self.username) or ""
+        return self.email or self.username or "-"
 
     def generate_otp(self):
         otp = "".join(random.choices(string.digits, k=5))
@@ -147,6 +147,7 @@ class OneTimePassword(models.Model):
         return f"{self.user.email} - {self.otp}"
 
     def send_code(self):
+        # print("SEND CODE-----------")
         send_verification_code(self.user, self.verification_type)
 
 

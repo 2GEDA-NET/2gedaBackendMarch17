@@ -7,18 +7,6 @@ from user.account.models import UserProfile
 User = get_user_model()
 
 
-# DAYS = [
-#     ("Monday", "Monday"),
-#     ("Tuesday", "Tuesday"),
-#     ("Wednesday", "Wednesday"),
-#     ("Wednesday", "Wednesday"),
-#     ("Thursday", "Thursday"),
-#     ("Friday", "Friday"),
-#     ("Saturday", "Saturday"),
-#     ("Sunday", "Sunday"),
-# ]
-
-
 class BusinessCategory(models.Model):
 
     name = models.CharField(_("Category Name"), max_length=250)
