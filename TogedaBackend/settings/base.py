@@ -235,15 +235,18 @@ else:
     # Static files (CSS, JavaScript, Images)
     # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
+
     STATIC_URL = "/static/"
     MEDIA_URL = "/media/"
 
-    if config("DEBUG", cast=bool):
+    if not config("DEV", cast=bool):
+
         STATIC_ROOT = config("CPANEL_ROOT") + "/public_html/staticfiles"
         MEDIA_ROOT = config("CPANEL_ROOT") + "/public_html/mediafiles"
     else:
         STATIC_ROOT = os.path.join(BASE_DIR, "static")
         MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
 
 # print("Static root: ", STATIC_ROOT)
 # print("Media root: ", MEDIA_ROOT)

@@ -24,6 +24,8 @@ class PostFileSerializer(serializers.ModelSerializer):
         return instance
 
 
+
+
 class PostSerializer(serializers.ModelSerializer):
     file = PostFileSerializer(required=False, allow_null=True)
     hashtags = serializers.ListSerializer(child=serializers.CharField(), required=False)
@@ -107,6 +109,23 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = m.User
         fields = ("id",)
+
+
+class ReportPostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = m.ReportPost
+        fields = (
+            "post",
+            "reason",
+        )
+
+    def create(self, validated_data):
+
+        user = self.context["user"]
+
+        instance = m.ReportPost.objects.create(user=user, **validated_data)
+
+        return instance
 
 
 class ReturnPostSerializer(serializers.ModelSerializer):

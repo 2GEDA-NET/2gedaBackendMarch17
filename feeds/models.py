@@ -33,11 +33,9 @@ class Post(models.Model):
 
     text_content = models.TextField()
 
-    file = models.ForeignKey(
+    file = models.ManyToManyField(
         PostFile,
         blank=True,
-        null=True,
-        on_delete=models.SET_NULL,
         related_name="post_files",
     )
 
@@ -78,8 +76,9 @@ class Post(models.Model):
             "angry_count": self.angry_count,
         }
 
-    def get_file(self):
-        return self.file.to_dict() if self.file else None
+    def get_files(self):
+
+        return [file.to_dict() for file in self.file.all()]
 
     def to_dict(self):
 
@@ -102,7 +101,7 @@ class Post(models.Model):
         return {
             "id": self.id,
             "text_content": self.text_content,
-            "file": self.get_file(),
+            "files": self.get_files(),
             "location": self.location,
             "hashtags": hashtags_serializer.data,
             "tagged_users": tagged_user_serializer.data,
@@ -269,7 +268,7 @@ class SavedPost(models.Model):
         return {
             "id": self.id,
             "user": self.user.id,
-            "post": self.post.id,
+            "post": self.post.to_dict(),
             "created_at": str(self.created_at),
         }
 
@@ -284,3 +283,22 @@ class SharePost(models.Model):
 class Status(models.Model):
 
     pass
+
+
+class Friends(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    friend = models.ForeignKey(
+        User, blank=True, on_delete=models.CASCADE, related_name="user_friends"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def to_dict(self):
+
+        return {"user": self.user.id, "friend": self.friend.id}
+
+
+class ReportPost(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    reason = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)

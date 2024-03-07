@@ -327,31 +327,31 @@ class AddFilePostAPIView(APIView):
 
         post = m.Post.objects.filter(id=post_id, user=request.user).first()
 
-
         if not post:
             raise NotFoundException("this post does not exist")
 
-        if post.file:
-            raise BadRequestException("File already exists for this post")
+        validated_files = []
+        for file in request.FILES.getlist("files"):
 
-        serializer = s.PostFileSerializer(
-            data=request.data,
-            context={
-                "post": post,
-                "file_type": request.data["file"].content_type,
-            },
-        )
-
-        if not serializer.is_valid():
-            raise BadRequestException(
-                message=serializer.error_messages, data=serializer.errors
+            serializer = s.PostFileSerializer(
+                data={"file": file},
+                context={
+                    "post": post,
+                    "file_type": file.content_type
+                },
             )
 
-        instance = serializer.save()
+            if not serializer.is_valid():
+                raise BadRequestException(
+                    message=serializer.error_messages, data=serializer.errors
+                )
 
-        post.file = instance
+            instance = serializer.save()
 
-        post.save()
+            validated_files.append(instance)
+
+        
+        post.file.add(*validated_files)
 
         context = {"post": post.to_dict()}
 
@@ -438,3 +438,81 @@ class CommentPostAPIView(APIView):
 #         return CustomResponse(data=context, message="get posts comments")
 
 #     pass
+
+
+class FriendsAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request):
+
+        friends_data = m.Friends.objects.filter(user=request.user).all()
+
+        friends = [friend.to_dict() for friend in friends_data]
+
+        context = {"friends": friends}
+
+        return CustomResponse(data=context, message="all user friends")
+
+    def post(self, request: Request):
+
+        serializer = s.UserSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            raise BadRequestException(
+                message=serializer.error_messages, data=serializer.errors
+            )
+
+        if request.user.id == serializer.validated_data["id"]:
+
+            raise BadRequestException("you cannot add  yourself as a friend")
+
+        instance = m.Friends(user=request.data, friend=serializer.validated_data["id"])
+
+        instance.save()
+
+        context = {"friend": instance.to_dict()}
+
+        return CustomResponse(data=context, message="added to friends successfully")
+
+
+class ReportPostAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Request):
+
+        serializer = s.ReportPostSerializer(
+            data=request.data, context={"user": request.user}
+        )
+
+        if not serializer.is_valid():
+            raise BadRequestException(
+                message=serializer.error_messages, data=serializer.errors
+            )
+
+        report = m.ReportPost.objects.filter(
+            post=serializer.validated_data["post"], user=request.user
+        ).exists()
+
+        if report:
+            raise BadRequestException(message="you can only report a post once")
+
+        serializer.save()
+
+        return CustomResponse(message="reported post")
+
+
+class PostListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request):
+
+        friends_posts = m.Post.objects.filter(user__user_friends__friend=request.user)
+
+        # additional posts from other users
+        additional_posts = m.Post.objects.exclude(user=request.user).order_by(
+            "-created_at"
+        )[:5]
+
+        pass
