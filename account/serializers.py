@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from ..auth.serializers import ReadOnlyUserSerializer
+from authentication.serializers import ReadOnlyUserSerializer
 from . import models as m
 
 User = get_user_model()
@@ -76,3 +76,9 @@ class UserProfileUpdateSerializer(UserProfileSerializer):
 
     class Meta(UserProfileSerializer.Meta):
         read_only_fields = ["media", "is_flagged"]
+
+
+class UserProfileMediaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = m.UserProfileMedia
+        fields = "__all__"

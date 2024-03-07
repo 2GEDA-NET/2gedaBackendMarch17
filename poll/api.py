@@ -4,7 +4,7 @@ from rest_framework import decorators, status, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from mixins import renderers
+from utils import renderers
 
 from . import models as m
 from . import serializers as s

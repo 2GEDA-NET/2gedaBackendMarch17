@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils.translation import gettext as _
 
-from user.account.models import UserProfile
+from account.models import UserProfile
 
 User = get_user_model()
 

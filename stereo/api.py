@@ -2,7 +2,7 @@ from rest_framework import decorators, generics, status, viewsets
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from mixins import renderers
+from utils import renderers
 
 from . import models as m
 from . import serializers as s

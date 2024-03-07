@@ -2,7 +2,6 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from rest_framework import serializers
 
-
 User = get_user_model()
 
 
@@ -279,8 +278,3 @@ class SharePost(models.Model):
     caption = models.TextField(blank=True, null=True)
     shared_post = models.ForeignKey("Post", on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
-
-
-class Status(models.Model):
-
-    pass

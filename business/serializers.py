@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from user.auth.serializers import UserRegisterOnlySerializer
+from authentication.serializers import UserRegisterOnlySerializer
 
 from . import models as m
 

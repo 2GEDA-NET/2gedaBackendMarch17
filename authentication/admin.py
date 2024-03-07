@@ -1,12 +1,10 @@
 from django.contrib import admin
-from import_export.admin import ImportExportModelAdmin
 
-from .account import models as acc
-from .auth.models import OneTimePassword, User
+from .models import OneTimePassword, User
 
 
 @admin.register(User)
-class UsersAdmin(ImportExportModelAdmin):
+class UsersAdmin(admin.ModelAdmin):
     list_display = (
         "email",
         "username",
@@ -59,54 +57,3 @@ class UsersAdmin(ImportExportModelAdmin):
 @admin.register(OneTimePassword)
 class OneTimePasswordAdmin(admin.ModelAdmin):
     list_display = ["user", "otp", "verification_type", "created_at"]
-
-
-@admin.register(acc.ProfileMedia)
-class ProfileMediaAdmin(ImportExportModelAdmin):
-    list_display = ("media",)
-
-
-@admin.register(acc.UserProfile)
-class UserProfileAdmin(ImportExportModelAdmin):
-    list_display = (
-        "user",
-        "occupation",
-        "date_of_birth",
-        "gender",
-    )
-    list_filter = ("gender",)
-    search_fields = [
-        "user",
-    ]
-
-
-@admin.register(acc.ReportedUser)
-class ReportedUserAdmin(ImportExportModelAdmin):
-    list_display = ("user", "is_banned", "is_disabled")
-    list_editable = [
-        "is_banned",
-        "is_disabled",
-    ]
-
-
-@admin.register(acc.UserAddress)
-class AddressAdmin(ImportExportModelAdmin):
-    list_display = ("country", "state", "city")
-
-
-@admin.register(acc.Verification)
-class VerificationAdmin(ImportExportModelAdmin):
-    list_display = ("profile", "legal_name", "work")
-
-
-@admin.register(acc.Notification)
-class NotificationAdmin(ImportExportModelAdmin):
-    list_display = ("recipient", "sender", "message", "timestamp")
-
-
-@admin.register(acc.Device)
-class DeviceAdmin(ImportExportModelAdmin):
-    list_display = ("name", "category", "input")
-
-
-admin.site.site_header = "2geda Administration Dashboard"

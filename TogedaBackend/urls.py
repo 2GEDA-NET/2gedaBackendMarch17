@@ -36,19 +36,13 @@ schema_view = get_schema_view(
 )
 
 api_routes = [
-    path("user/", include("user.urls", namespace="user")),
+    path("account/", include("account.urls", namespace="account")),
+    path("auth/", include("authentication.urls", namespace="authentication")),
     path("business/", include("business.urls", namespace="business")),
     path("education/", include("education.urls", namespace="education")),
+    path("feeds/", include("feeds.urls", namespace="feeds")),
     path("polls/", include("poll.urls", namespace="poll")),
     path("stereo/", include("stereo.urls", namespace="stereo")),
-    path("feeds/", include("feeds.urls", namespace="feeds")),
-    # path("commerce/", include("commerce.urls")),
-    # path("ticket/", include("ticket.urls")),
-    # path("chat/", include("chat.urls")),
-    # path("reward/", include(reward_url)),
-    # path("utils/", include(utils_url)),
-    # path("fund-account", MakePaymentView.as_view()),
-    # path("__debug__/", include("debug_toolbar.urls")),
 ]
 
 urlpatterns = [

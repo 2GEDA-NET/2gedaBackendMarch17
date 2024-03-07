@@ -1,8 +1,8 @@
 from rest_framework import serializers
 
 from . import models as m
-from user.account.serializers import UserProfileSerializer
-from user.account.models import UserProfile
+from account.serializers import UserProfileSerializer
+from account.models import UserProfile
 
 
 class SongLibrarySerializer(serializers.ModelSerializer):

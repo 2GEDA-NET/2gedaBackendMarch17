@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 import requests
 from django.conf import settings
 
@@ -22,9 +20,8 @@ class Paystack(object):
     def initialize(cls, amount, email, **params):
         url = f"{cls.base_url}/transaction/initialize"
         amount_str = f"{amount * cls.kobo}"
-        # callback_url =
         data = {"amount": amount_str, "email": email}
-        data.update(params)
+        data.update(**params)
 
         try:
             response = requests.post(url=url, data=data, headers=cls.headers)

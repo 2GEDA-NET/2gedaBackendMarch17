@@ -4,6 +4,7 @@ from rest_framework.response import Response
 
 from . import models as m
 from . import serializers as s
+from utils import renderers
 
 User = get_user_model()
 
@@ -64,3 +65,61 @@ class UserProfileAPI(viewsets.GenericViewSet):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class UserProfileMediaAPI(
+    renderers.CreateModelRenderer,
+    renderers.DestroyModelRenderer,
+    viewsets.GenericViewSet,
+):
+    serializer_class = s.UserProfileMediaSerializer
+    queryset = m.UserProfileMedia.objects.all()
+    lookup_url_kwarg = "media_id"
+
+
+class UserProfileImageMediaAPI(
+    renderers.ReadOnlyModelRenderer,
+    renderers.DestroyModelRenderer,
+    viewsets.GenericViewSet,
+):
+    serializer_class = s.UserProfileMediaSerializer
+    lookup_url_kwarg = "image_id"
+
+    def get_queryset(self):
+        return m.UserProfileMedia.objects.filter(media_type="image")
+
+
+class UserProfileFileMediaAPI(
+    renderers.ReadOnlyModelRenderer,
+    renderers.DestroyModelRenderer,
+    viewsets.GenericViewSet,
+):
+    serializer_class = s.UserProfileMediaSerializer
+    lookup_url_kwarg = "file_id"
+
+    def get_queryset(self):
+        return m.UserProfileMedia.objects.filter(media_type="file")
+
+
+class UserProfileVoiceNoteMediaAPI(
+    renderers.ReadOnlyModelRenderer,
+    renderers.DestroyModelRenderer,
+    viewsets.GenericViewSet,
+):
+    serializer_class = s.UserProfileMediaSerializer
+    lookup_url_kwarg = "voice_note_id"
+
+    def get_queryset(self):
+        return m.UserProfileMedia.objects.filter(media_type="voice_note")
+
+
+class UserProfileVideoMediaAPI(
+    renderers.ReadOnlyModelRenderer,
+    renderers.DestroyModelRenderer,
+    viewsets.GenericViewSet,
+):
+    serializer_class = s.UserProfileMediaSerializer
+    lookup_url_kwarg = "video_id"
+
+    def get_queryset(self):
+        return m.UserProfileMedia.objects.filter(media_type="video")

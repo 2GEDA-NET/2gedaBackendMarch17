@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from user.account.serializers import UserProfileMinimalSerializer
+from account.serializers import UserProfileMinimalSerializer
 
 from . import models as m
 
