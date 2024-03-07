@@ -1,9 +1,12 @@
 from rest_framework import serializers
 
+from user.account.serializers import UserProfileMinimalSerializer
+
 from . import models as m
 
 
 class PollOptionSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = m.PollOption
         fields = ["id", "content"]
@@ -11,6 +14,9 @@ class PollOptionSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data["votes"] = instance.voters.count()
+        data["voters"] = UserProfileMinimalSerializer(
+            instance.voters.all(), many=True
+        ).data
         return data
 
 

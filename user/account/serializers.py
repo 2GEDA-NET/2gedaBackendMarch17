@@ -53,6 +53,18 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
+class UserProfileMinimalSerializer(serializers.ModelSerializer):
+
+    username = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = m.UserProfile
+        fields = ["id", "username", "profile_picture"]
+
+    def get_username(self, instance):
+        return instance.user.username
+
+
 class WriteOnlyUserProfileSerializer(serializers.Serializer):
     first_name = serializers.CharField(required=False)
     last_name = serializers.CharField(required=False)

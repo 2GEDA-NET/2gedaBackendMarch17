@@ -76,18 +76,30 @@ class PollsAPI(renderers.ReadOnlyModelRenderer, viewsets.GenericViewSet):
     def vote(self, request, *args, **kwargs):
         poll_id = kwargs.get("poll_id", 0)
         option_id = request.data.get("option_id", 0)
+        profile = request.user.profile
         # print("Poll DI: ", poll_id)
         poll = m.Poll.objects.filter(pk=int(poll_id))
         if poll.exists():
             poll = poll.first()
-            if poll.creator == request.user.profile:
+            # check if user have voted for the actual poll alredy
+            if profile in poll.voters.all():
+                return Response(
+                    {"message": "You have voted already!", "status": False},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+                # user can not vote for he/her own poll
+            if poll.creator == profile:
                 return Response(
                     {"message": "You can't vote for your poll!", "status": False},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             option = m.PollOption.objects.filter(pk=int(option_id), poll=poll)
             if option.exists():
-                option.first().voters.add(request.user.profile)
+                # add user to the options he/she voted for
+                option.first().voters.add(profile)
+                # add user to the actual poll
+                # whether he/she has voted so to keep track/record
+                poll.voters.add(profile)
                 return Response(
                     {"message": "Voted!", "status": True}, status=status.HTTP_200_OK
                 )
@@ -107,6 +119,8 @@ class UserPollAPI(renderers.CrudModelRenderer, viewsets.GenericViewSet):
     lookup_url_kwarg = "poll_id"
     serializer_class = s.PollSerializer
 
+    params = [openapi.Parameter("find", in_=openapi.IN_QUERY, type=openapi.TYPE_STRING)]
+
     def get_permissions(self):
         if self.action == "create":
             permissions = [IsAuthenticated]
@@ -122,7 +136,9 @@ class UserPollAPI(renderers.CrudModelRenderer, viewsets.GenericViewSet):
 
     @decorators.action(methods=["GET"], detail=False, url_path="active")
     def active(self, request, *args, **kwargs):
-        active_polls = m.Poll.objects.filter(is_closed=False)
+        active_polls = m.Poll.objects.filter(
+            creator=request.user.profile, is_closed=False
+        )
         data = s.PollSerializer(active_polls, many=True).data
         return Response(
             {"message": "Success", "status": True, "data": data},
@@ -131,7 +147,9 @@ class UserPollAPI(renderers.CrudModelRenderer, viewsets.GenericViewSet):
 
     @decorators.action(methods=["GET"], detail=False, url_path="ended")
     def ended(self, request, *args, **kwargs):
-        active_polls = m.Poll.objects.filter(is_closed=True)
+        active_polls = m.Poll.objects.filter(
+            creator=request.user.profile, is_closed=True
+        )
         data = s.PollSerializer(active_polls, many=True).data
         return Response(
             {"message": "Success", "status": True, "data": data},
@@ -150,4 +168,20 @@ class UserPollAPI(renderers.CrudModelRenderer, viewsets.GenericViewSet):
         return Response(
             {"message": "Invalid Poll!", "status": False},
             status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    @swagger_auto_schema(method="GET", manual_parameters=params)
+    @decorators.action(methods=["GET"], detail=False, url_path="find")
+    def find(self, request, *args, **kwargs):
+        query = request.query_params.get("find", "")
+        if query:
+            active_polls = m.Poll.objects.filter(
+                creator=request.user.profile, question__icontains=query
+            )
+        else:
+            active_polls = m.Poll.objects.none()
+        data = s.PollSerializer(active_polls, many=True).data
+        return Response(
+            {"message": "Success", "status": True, "data": data},
+            status=status.HTTP_200_OK,
         )
