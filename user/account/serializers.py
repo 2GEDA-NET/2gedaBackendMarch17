@@ -27,7 +27,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = m.UserProfile
-        fields = "__all__"
+        exclude = ["stickers", "sticking"]
 
     def get_address(self, profile):
         address = m.UserAddress.objects.filter(
@@ -40,8 +40,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
         address = m.UserAddress.objects.filter(profile=instance)
         data["user"] = ReadOnlyUserSerializer(instance.user).data
         data["address"] = UserAddressSerializer(address.first()).data
-        data["stickers_count"] = instance.stickers_count
-        data["sticking_count"] = instance.sticking_count
+        data["stickers"] = instance.stickers.count()
+        data["sticking"] = instance.sticking.count()
         return data
 
     def create(self, validated_data):

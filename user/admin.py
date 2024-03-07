@@ -66,11 +66,6 @@ class ProfileMediaAdmin(ImportExportModelAdmin):
     list_display = ("media",)
 
 
-@admin.register(acc.Sticker)
-class StickerAdmin(admin.ModelAdmin):
-    list_display = ["sticker", "sticked", "sticked_on"]
-
-
 @admin.register(acc.UserProfile)
 class UserProfileAdmin(ImportExportModelAdmin):
     list_display = (

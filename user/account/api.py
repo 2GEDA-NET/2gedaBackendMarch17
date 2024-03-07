@@ -52,13 +52,14 @@ class UserProfileAPI(viewsets.GenericViewSet):
             # print("ADDRESS: ", address)
             user_address = m.UserAddress.objects.filter(profile=request.user.profile)
             user_address.update(**address)
-        m.UserProfile.objects.filter(user=request.user).update(**data)
+        profile = m.UserProfile.objects.filter(user=request.user)
+        profile.update(**data)
         return Response(
             {
                 "message": "Profile updated successfully!",
                 "status": True,
                 "data": s.UserProfileUpdateSerializer(
-                    request.user.profile, context={"request": request}
+                    profile.first(), context={"request": request}
                 ).data,
             },
             status=status.HTTP_200_OK,

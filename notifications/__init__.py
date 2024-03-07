@@ -33,6 +33,8 @@ def send_verification_code(user: object, verification_type: str) -> None:
         ),
         receiver=[user.email],
         html_message=(
-            render_to_string(template, context={"otp": otp}) if template else None
+            render_to_string(template, context={"otp": otp, "username": user.username})
+            if template
+            else None
         ),
     ).run()

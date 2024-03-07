@@ -22,10 +22,6 @@ from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 
-from reward.api.v1 import urls as reward_url
-from ticket.views import MakePaymentView
-from utils import urls as utils_url
-
 schema_view = get_schema_view(
     openapi.Info(
         title="2geda API",
@@ -41,14 +37,14 @@ schema_view = get_schema_view(
 
 api_routes = [
     path("user/", include("user.urls", namespace="user")),
-    # path("feed/", include("feed.urls")),
+    path("business/", include("business.urls", namespace="business")),
+    path("education/", include("education.urls", namespace="education")),
+    path("polls/", include("poll.urls", namespace="poll")),
+    path("stereo/", include("stereo.urls", namespace="stereo")),
+    path("feeds/", include("feeds.urls", namespace="feeds")),
     # path("commerce/", include("commerce.urls")),
     # path("ticket/", include("ticket.urls")),
     # path("chat/", include("chat.urls")),
-    # path("business/", include("business.urls", namespace="business")),
-    # path("education/", include("education.urls")),
-    path("polls/", include("poll.urls", namespace="poll")),
-    # path("stereo/", include("stereo.urls")),
     # path("reward/", include(reward_url)),
     # path("utils/", include(utils_url)),
     # path("fund-account", MakePaymentView.as_view()),

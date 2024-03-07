@@ -1,5 +1,8 @@
-from django.urls import path, include
+from django.urls import path
+
 from . import views
+
+app_name = "education"
 
 urlpatterns = [
     path("redirect/jamb/", views.RedirectJambView.as_view(), name="jamb"),

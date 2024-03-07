@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "location_field.apps.DefaultConfig",
     "corsheaders",
     "channels",
+    "storages",
     "rest_framework",
     "drf_yasg",
     "django_filters",
@@ -43,21 +44,20 @@ INSTALLED_APPS = [
     # "debug_toolbar",
     # apps
     "user",
-    "chat",
-    "commerce",
-    "connect",
-    "live",
-    "feed",
-    "ticket",
     "business",
     "poll",
     "stereo",
-    "tv",
-    "user_id",
-    "reward",
-    "utils",
-    "storages",
     "payments",
+    "feeds",
+    # "chat",
+    # "commerce",
+    # "connect",
+    # "live",
+    # "ticket",
+    # "tv",
+    # "user_id",
+    # "reward",
+    # "utils",
 ]
 
 MIDDLEWARE = [
@@ -139,8 +139,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
     "user.auth.backends.UsernameAuthBackend",
-    # "user.authentication_backends.BusinessAccountAuthBackend",
-    # "user.authentication_backends.CustomAuthBackend",
 ]
 
 FROM_EMAIL = "2gedafullstack@gmail.com"
@@ -156,8 +154,6 @@ INTERNAL_IPS = [
 # Add DRF authentication and permission classes
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        # "rest_framework.authentication.BasicAuthentication",
-        # "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.TokenAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
@@ -169,7 +165,7 @@ REST_FRAMEWORK = {
         "rest_framework.parsers.JSONParser",
     ],
     "DEFAULT_SCHEMA_CLASS": "rest_framework.schemas.coreapi.AutoSchema",
-    "EXCEPTION_HANDLER": "TogedaBackend.utils.exception_handler.custom_exception_handler",
+    "EXCEPTION_HANDLER": "utils.exception_handler.custom_exception_handler",
 }
 
 # Swagger Configuration
@@ -197,6 +193,8 @@ CHANNEL_LAYERS = {
     },
 }
 
+CSRF_TRUSTED_ORIGINS = ["http://development.2geda.net/"]
+
 # Paystack Integration
 PAYSTACK_PUBLIC_KEY = config("PAYSTACK_PUBLIC_KEY")
 PAYSTACK_SECRET_KEY = config("PAYSTACK_SECRET_KEY")
@@ -208,31 +206,16 @@ TWILIO_ACCOUNT_SID = config("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = config("TWILIO_AUTH_TOKEN")
 TWILIO_PHONE_NUMBER = config("TWILIO_PHONE_NUMBER")
 
-if config("SEND_EMAIL", cast=bool):
-    # EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-    # EMAIL_HOST = "mail.2geda.net"
-    # EMAIL_HOST_USER = "support@2geda.net"
-    # EMAIL_HOST_PASSWORD = "mO0rxQrNG*#7"
-    # DEFAULT_FROM_EMAIL = "support@2geda.net"
-    # SERVER_EMAIL = "mail.2geda.net"
-    EMAIL_HOST = "smtp.gmail.com"
-    EMAIL_HOST_USER = "deepraisegee@gmail.com"
-    EMAIL_HOST_PASSWORD = "shjieafdhhlaezgc"
-    EMAIL_PORT = 465
-    # EMAIL_USE_TLS = False
-    EMAIL_USE_SSL = True
-    # EMAIL_FILE_PATH = os.path.join(BASE_DIR, "sent_emails")
 
-    print("SENDING EMAIL------------------------")
-    # SERVER_EMAIL = config("SERVER_EMAIL")
-    # EMAIL_HOST = config("EMAIL_HOST")
-    # EMAIL_HOST_USER = config("EMAIL_HOST_USER")
-    # EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
-    # EMAIL_USE_TLS = config("EMAIL_USE_TLS", cast=bool)
-    # EMAIL_USE_SSL = config("EMAIL_USE_SSL", cast=bool)
-    # EMAIL_PORT = config("EMAIL_PORT", cast=int)
-    # DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL")
-    # EMAIL_FILE_PATH = os.path.join(BASE_DIR, "sent_emails")
+STATICFILES_DIRS = [BASE_DIR / "notifications/static"]
+
+if config("SEND_EMAIL", cast=bool):
+    EMAIL_HOST = config("EMAIL_HOST")
+    EMAIL_HOST_USER = config("EMAIL_HOST_USER")
+    EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
+    EMAIL_PORT = 465
+    EMAIL_USE_TLS = False
+    EMAIL_USE_SSL = True
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
@@ -255,7 +238,7 @@ else:
     STATIC_URL = "/static/"
     MEDIA_URL = "/media/"
 
-    if not config("DEBUG", cast=bool):
+    if config("DEBUG", cast=bool):
         STATIC_ROOT = config("CPANEL_ROOT") + "/public_html/staticfiles"
         MEDIA_ROOT = config("CPANEL_ROOT") + "/public_html/mediafiles"
     else:

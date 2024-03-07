@@ -1,101 +1,117 @@
-import random
-import uuid
-from collections.abc import Iterable
-
+from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
-from user.models import User
+from user.account.models import UserProfile
 
-# Create your models here.
-SERVICES = (
-    ("poll", "poll"),
-    ("ticket", "ticket"),
-    ("live", "live"),
-    ("feed", "feed"),
-    ("connect", "connect"),
-    ("commerce", "commerce"),
-    ("business", "business"),
-    ("stereo", "stereo"),
-    ("ticket", "ticket"),
-    ("tv", "tv"),
-)
+from . import choices
+from .paystack import Paystack
+
+User = get_user_model()
 
 
-def create_id():
-    num = random.randint(100, 2000)
-    num_2 = random.randint(1, 1000)
-    num_3 = random.randint(60, 1000)
-    return str(num) + str(num_2) + str(num_3) + str(uuid.uuid4())[:8]
+class PaymentTransaction(models.Model):
+    """General Payment transaction model"""
 
-
-class Wallet_Funding(models.Model):
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        editable=False,
-        blank=False,
+    profile = models.ForeignKey(
+        UserProfile,
+        on_delete=models.SET_NULL,
         null=True,
-        related_name="wallet_funding",
+        verbose_name=_("Auth User"),
     )
-    medium = models.CharField(
-        max_length=500,
+    payment_method = models.CharField(
+        _("Payment method"),
+        max_length=20,
+        choices=choices.PAYMENT_GATEWAY,
         blank=True,
-        editable=False,
-    )
-    amount = models.IntegerField(editable=False, default=0)
-    previous_balance = models.IntegerField(editable=False, default=0)
-    after_balance = models.IntegerField(null=True, editable=False, default=0)
-    create_date = models.DateTimeField(
-        default=timezone.now,
-        editable=False,
-    )
-    track_id = models.CharField(default=create_id, editable=False, max_length=30)
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.init_prev_balance = self.after_balance
-
-    def save(self, *args, **kwargs) -> None:
-        if self.amount:
-            self.previous_balance = self.init_prev_balance
-            self.after_balance = self.init_prev_balance + self.amount
-            self.user.account_balance = self.after_balance
-            self.user.save()
-
-            Wallet_summary.objects.create(
-                user=self.user,
-                product="funding",
-                amount=self.amount,
-                previous_balance=self.init_prev_balance,
-                after_balance=self.after_balance,
-            )
-
-        return super().save(*args, **kwargs)
-
-
-class Wallet_summary(models.Model):
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        editable=False,
-        blank=False,
         null=True,
-        related_name="wallet",
     )
-    product = models.CharField(max_length=500, blank=True, choices=SERVICES)
-    amount = models.IntegerField(default=0, editable=False)
-    previous_balance = models.IntegerField(default=0)
-    after_balance = models.IntegerField(default=0)
-    create_date = models.DateTimeField(default=timezone.now)
-    ident = models.CharField(default=create_id, editable=False, max_length=30)
+    amount = models.DecimalField(
+        _("Amount"), default=0, max_digits=19, decimal_places=2
+    )
+    transaction_reason = models.CharField(
+        _("Transaction Reason"), max_length=25, blank=True, null=True
+    )
+    amount = models.DecimalField(
+        _("Actual Amount"), max_digits=19, decimal_places=2, blank=True, null=True
+    )
+    transaction_fee = models.DecimalField(
+        _("Transaction Fee"),
+        max_digits=19,
+        decimal_places=2,
+        blank=True,
+        null=True,
+    )
+    flag = models.CharField(
+        _("Flag"),
+        choices=choices.TRANSACTION_FLAGS,
+        max_length=25,
+        null=True,
+        blank=True,
+    )
+    status = models.CharField(
+        _("Status"),
+        choices=choices.TRANSACTION_STATUS,
+        default="pending",
+        max_length=15,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return str(self.user)
+    def __str__(self) -> str:
+        return f"{self.profile}"
+
+    def mark_as_success(self):
+        if self.status == "pending":
+            self.status = "success"
+            self.save()
+
+    def mark_as_failed(self):
+        if self.status == "pending":
+            self.status = "failed"
+            self.save()
+
+
+class PaystackTransaction(models.Model):
+    """
+    Paystack Payment Gateway transaction model
+    """
+
+    transaction = models.OneToOneField(
+        PaymentTransaction, related_name="paystack", on_delete=models.CASCADE
+    )
+    amount = models.DecimalField(
+        _("Amount in Naira"),
+        max_digits=19,
+        decimal_places=2,
+    )
+    reference = models.CharField(
+        _("Payment Reference Number"), max_length=50, unique=True
+    )
+    fee = models.DecimalField(
+        _("Paystack Fee"),
+        max_digits=14,
+        decimal_places=2,
+        default=0.00,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return self.transaction.__str__()
+
+    def set_reference(self):
+        """
+        This will set a progressive reference number that is always unique
+        """
+        now = timezone.now()
+        str_date = str(now.date()).replace("-", "")
+        prefix = "PT"  # Don't ever change this Prefix.
+        self.reference = f"{prefix}{self.transaction.id}{str_date}"
 
     def save(self, *args, **kwargs):
-
-        super(Wallet_summary, self).save(*args, **kwargs)
-
-    class Meta:
-        verbose_name_plural = "USERS WALLET SUMMARY"
+        if self._state.adding:
+            # Set reference if it's a new object.
+            self.set_reference()
+        super().save(*args, **kwargs)

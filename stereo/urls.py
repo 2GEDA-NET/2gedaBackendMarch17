@@ -3,6 +3,8 @@ from rest_framework.routers import DefaultRouter
 
 from . import api
 
+app_name = "stereo"
+
 router = DefaultRouter()
 router.register("album", api.AlbumAPI, basename="album")
 router.register("artists", api.ArtistAPI, basename="artist")

@@ -55,6 +55,8 @@ class UserProfile(models.Model):
     religion = models.CharField(
         _("Religion"), max_length=20, choices=RELIGION_CHOICES, blank=True, null=True
     )
+    stickers = models.ManyToManyField(to="self", verbose_name=_("Sticker"), blank=True)
+    sticking = models.ManyToManyField(to="self", verbose_name=_("Sticking"), blank=True)
     media = models.ForeignKey(
         ProfileMedia,
         on_delete=models.CASCADE,
@@ -85,31 +87,6 @@ class UserProfile(models.Model):
         except ValueError:
             url = ""
         return url
-
-    @property
-    def sticking_count(self):
-        return 0  # TODO coming to this later
-
-
-class Sticker(models.Model):
-    sticker = models.ForeignKey(
-        to=UserProfile,
-        on_delete=models.CASCADE,
-        verbose_name=_("Sticker"),
-        related_name="stickers",
-        help_text=_("stickers are like a followers"),
-    )
-    sticked = models.ForeignKey(
-        to=UserProfile,
-        on_delete=models.CASCADE,
-        verbose_name=_("Sticked"),
-        related_name="sticking",
-        help_text=_("sticking are like those the user is following"),
-    )
-    sticked_on = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ["sticker", "sticked"]
 
 
 class UserAddress(models.Model):
@@ -230,3 +207,24 @@ class BlockedUser(models.Model):
 
     class Meta:
         unique_together = ("blocker", "blocked_user")
+
+
+class BlockedUsers(models.Model):
+    user = models.ForeignKey(
+        "User", on_delete=models.CASCADE, related_name="blocked_users_set"
+    )
+    blocked_user = models.ForeignKey(
+        "User", on_delete=models.CASCADE, related_name="blocked_by_set"
+    )
+    reason = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.blocker} blocked {self.blocked_user}"
+
+    def to_dict(self):
+
+        return {
+            "blocked_user": self.blocked_user.id,
+            "created_at": str(self.created_at),
+        }

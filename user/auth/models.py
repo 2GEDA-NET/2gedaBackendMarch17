@@ -16,7 +16,7 @@ class UserManager(BaseUserManager):
     """
 
     def _create_user(
-        self, username, email, phone_number=None, password=None, **extra_fields
+        self, email, username, phone_number=None, password=None, **extra_fields
     ):
         """
         Creates and saves a User with the
@@ -38,7 +38,7 @@ class UserManager(BaseUserManager):
         return user
 
     def create_user(
-        self, username, email, phone_number=None, password=None, **extra_fields
+        self, email, username, phone_number=None, password=None, **extra_fields
     ):
         """
         Creates and saves a regular User with the
@@ -49,11 +49,11 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault("is_superuser", False)
         extra_fields.setdefault("is_personal", True)
         return self._create_user(
-            username, email, phone_number, password, **extra_fields
+            email, username, phone_number, password, **extra_fields
         )
 
     def create_business_user(
-        self, username, email, phone_number=None, password=None, **extra_fields
+        self, email, username=None, phone_number=None, password=None, **extra_fields
     ):
         """
         Creates and saves a business User with the
@@ -63,11 +63,11 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault("is_business", True)
         extra_fields.setdefault("is_personal", False)
         return self._create_user(
-            username, email, phone_number, password, **extra_fields
+            email, username, phone_number, password, **extra_fields
         )
 
     def create_superuser(
-        self, username, email, phone_number=None, password=None, **extra_fields
+        self, email, username=None, phone_number=None, password=None, **extra_fields
     ):
         """
         Creates and saves a superuser with the
@@ -100,7 +100,7 @@ class User(AbstractUser):
 
     USERNAME_FIELD = "email"
     EMAIL_FIELD = "email"
-    REQUIRED_FIELDS = []
+    REQUIRED_FIELDS = ["username"]
 
     # class Meta:
     #     swappable = "AUTH_USER_MODEL"
