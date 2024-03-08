@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from user.account.serializers import UserProfileMinimalSerializer
+from account.serializers import UserProfileMinimalSerializer
 
 from . import models as m
 
@@ -20,8 +20,13 @@ class PollOptionSerializer(serializers.ModelSerializer):
         return data
 
 
+class VoteOptionSerializer(serializers.Serializer):
+    option_id = serializers.IntegerField(required=True, write_only=True)
+
+
 class WriteOnlyPollOptionSerializer(serializers.Serializer):
-    option_id = serializers.IntegerField(required=True)
+    option_id = serializers.IntegerField(required=False, write_only=True)
+    content = serializers.CharField(required=True)
 
 
 class PollSerializer(serializers.ModelSerializer):
@@ -31,7 +36,7 @@ class PollSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = m.Poll
-        fields = "__all__"
+        exclude = ["voters"]
         read_only_fields = ["creator", "created_at", "updated_at", "is_closed"]
 
     def to_representation(self, instance):
@@ -55,12 +60,25 @@ class PollSerializer(serializers.ModelSerializer):
         )
         return data
 
+    def create(self, validated_data):
+        options = validated_data.pop("options", [])
+        poll = m.Poll.objects.create(**validated_data)
+        for option in options:
+            m.PollOption.objects.create(poll=poll, **option)
+        return poll
+
+
+class PollUpdateSerializer(PollSerializer):
+    options = serializers.ListField(
+        child=WriteOnlyPollOptionSerializer(), write_only=True, required=True
+    )
+
     def update(self, instance, validated_data):
         options = validated_data.pop("options", [])
         for option in options:
             # update the option if exists otherwise create new option for the poll instance
             poll_option = m.PollOption.objects.filter(
-                poll=instance, content=option.get("content", "")
+                poll=instance, pk=int(option.pop("option_id", 0))
             )
             if poll_option.exists():
                 poll_option.update(**option)
@@ -69,10 +87,3 @@ class PollSerializer(serializers.ModelSerializer):
         polls = m.Poll.objects.filter(pk=instance.id)
         polls.update(**validated_data)
         return polls.first()
-
-    def create(self, validated_data):
-        options = validated_data.pop("options", [])
-        poll = m.Poll.objects.create(**validated_data)
-        for option in options:
-            m.PollOption.objects.create(poll=poll, **option)
-        return poll

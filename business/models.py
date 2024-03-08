@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils.translation import gettext as _
 
-from user.account.models import UserProfile
+from account.models import UserProfile
 
 User = get_user_model()
 
@@ -135,6 +135,7 @@ class PhoneNumber(models.Model):
 
 
 class BusinessTimeAvailability(models.Model):
+
     open_from = models.TimeField(_("Open"))
     close_at = models.TimeField(_("Close"))
 
@@ -143,6 +144,7 @@ class BusinessTimeAvailability(models.Model):
 
 
 class BusinessDayAvailability(models.Model):
+
     business = models.ForeignKey(
         to=BusinessAccount, verbose_name=_("Business"), on_delete=models.CASCADE
     )

@@ -1,14 +1,17 @@
-from rest_framework.views import APIView
-import rest_framework.status as status
+from rest_framework import status
 from rest_framework.exceptions import APIException
-from rest_framework.permissions import IsAuthenticated
-from .permissions import IsBlockedPost
-from rest_framework.request import Request
 from rest_framework.parsers import MultiPartParser
-from utils.exception import NotFoundException, BadRequestException
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
+from rest_framework.views import APIView
+
+from utils.exception import BadRequestException, NotFoundException
 from utils.response import CustomResponse
+
 from . import models as m
 from . import serializers as s
+
+# from .permissions impor] #IsBlockedPost
 
 
 class PostAPIView(APIView):
@@ -43,7 +46,7 @@ class PostAPIView(APIView):
 # This is to make any changes (update or delete) to a single post
 class SinglePostView(APIView):
 
-    permission_classes = [IsAuthenticated, IsBlockedPost]
+    permission_classes = [IsAuthenticated]  # IsBlockedPost]
 
     def get(self, request: Request, post_id: int):
 
@@ -90,7 +93,7 @@ class SinglePostView(APIView):
 
 class ReactionPostView(APIView):
 
-    permission_classes = [IsAuthenticated, IsBlockedPost]
+    permission_classes = [IsAuthenticated]  # IsBlockedPost]
 
     def get(self, request: Request, post_id: int):
 
@@ -301,7 +304,7 @@ class SavedPostAPIView(APIView):
 
 class SavePostAPIView(APIView):
 
-    permission_classes = [IsAuthenticated, IsBlockedPost]
+    permission_classes = [IsAuthenticated]  # IsBlockedPost]
 
     def post(self, request: Request, post_id: int):
 

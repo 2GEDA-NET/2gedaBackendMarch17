@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from user.account.models import UserProfile
+from account.models import UserProfile
 
 
 class Library(models.Model):
@@ -71,8 +71,14 @@ class Song(models.Model):
         blank=True,
         null=True,
     )
-    # duration = models.CharField(_("Duration"), max_length=20, blank=True, null=True)
-    category = models.ManyToManyField(to=SongCategory, verbose_name=_("Category"))
+    duration = models.CharField(_("Duration"), max_length=20, blank=True, null=True)
+    category = models.ForeignKey(
+        to=SongCategory,
+        on_delete=models.SET_NULL,
+        verbose_name=_("Category"),
+        blank=True,
+        null=True,
+    )
     cover_image = models.ImageField(
         _("Cover Image"), upload_to="song-cover-images", blank=True, null=True
     )

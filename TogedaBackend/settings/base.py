@@ -20,63 +20,43 @@ SETTINGS_DIR = Path(__file__).resolve().parent.parent
 BASE_DIR = SETTINGS_DIR.parent
 
 INSTALLED_APPS = [
+    # Django Apss
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # installed packages
-    "import_export",
-    "django_extensions",
-    "rest_framework.authtoken",
-    "location_field.apps.DefaultConfig",
-    "corsheaders",
-    "channels",
-    "storages",
+    # Installed Apps
     "rest_framework",
+    "rest_framework.authtoken",
+    "corsheaders",
+    "storages",
     "drf_yasg",
-    "django_filters",
-    "django_otp",
-    "django_otp.plugins.otp_totp",
-    "django_otp.plugins.otp_hotp",
-    "django_otp.plugins.otp_static",
-    # "debug_toolbar",
-    # apps
-    "user",
+    # 2geda Apps
+    "authentication",
+    "account",
     "business",
     "poll",
     "stereo",
     "payments",
     "feeds",
-    # "chat",
-    # "commerce",
-    # "connect",
-    # "live",
-    # "ticket",
-    # "tv",
-    # "user_id",
-    # "reward",
-    # "utils",
+    "notifications",
 ]
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",
-    # 'channels.middleware.WebSocketMiddleware',
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    # "debug_toolbar.middleware.DebugToolbarMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",  # Moved up
     "django.contrib.messages.middleware.MessageMiddleware",
-    "django_otp.middleware.OTPMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    # 'rest_framework.authtoken.middleware.AuthenticationMiddleware',
 ]
 
 WSGI_APPLICATION = "TogedaBackend.wsgi.application"
-ASGI_APPLICATION = "TogedaBackend.asgi.application"
+# ASGI_APPLICATION = "TogedaBackend.asgi.application"
 
 ROOT_URLCONF = "TogedaBackend.urls"
 
@@ -129,7 +109,7 @@ USE_I18N = True
 
 USE_TZ = True
 
-AUTH_USER_MODEL = "user.User"
+AUTH_USER_MODEL = "authentication.User"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
@@ -138,7 +118,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
-    "user.auth.backends.UsernameAuthBackend",
+    "authentication.backends.UsernameAuthBackend",
 ]
 
 FROM_EMAIL = "2gedafullstack@gmail.com"
@@ -154,15 +134,17 @@ INTERNAL_IPS = [
 # Add DRF authentication and permission classes
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.TokenAuthentication",
+        "authentication.auth.TokenAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
+        # "authentication.permissions.IsVerifiedPermission",
     ],
     "DEFAULT_PARSER_CLASSES": [
         "rest_framework.parsers.FormParser",
-        "rest_framework.parsers.MultiPartParser",
         "rest_framework.parsers.JSONParser",
+        "rest_framework.parsers.MultiPartParser",
+        "rest_framework.parsers.FileUploadParser",
     ],
     "DEFAULT_SCHEMA_CLASS": "rest_framework.schemas.coreapi.AutoSchema",
     "EXCEPTION_HANDLER": "utils.exception_handler.custom_exception_handler",
@@ -211,7 +193,7 @@ TWILIO_PHONE_NUMBER = config("TWILIO_PHONE_NUMBER")
 
 STATICFILES_DIRS = [BASE_DIR / "notifications/static"]
 
-if config("SEND_EMAIL", cast=bool):
+if not config("SEND_EMAIL", cast=bool):
     EMAIL_HOST = config("EMAIL_HOST")
     EMAIL_HOST_USER = config("EMAIL_HOST_USER")
     EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")

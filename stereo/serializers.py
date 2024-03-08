@@ -1,8 +1,8 @@
 from rest_framework import serializers
 
 from . import models as m
-from user.account.serializers import UserProfileSerializer
-from user.account.models import UserProfile
+from account.serializers import UserProfileSerializer
+from account.models import UserProfile
 
 
 class SongLibrarySerializer(serializers.ModelSerializer):
@@ -51,12 +51,13 @@ class MinimalArtistSerializer(serializers.ModelSerializer):
 
 
 class SongSerializer(serializers.ModelSerializer):
-    artist = MinimalArtistSerializer(read_only=True)
+    # artist = MinimalArtistSerializer(read_only=True)
     categories = serializers.SerializerMethodField()
 
     class Meta:
         model = m.Song
-        exclude = ["category"]
+        fields = "__all__"
+        read_only_fields = ["downloads", "plays", "likes", "category", "artist"]
 
     def get_categories(self, instance):
         categories = m.SongCategory.objects.filter()
@@ -67,7 +68,7 @@ class SongSerializer(serializers.ModelSerializer):
         data["likes"] = instance.likes.count()
         data["plays"] = instance.plays.count()
         data["downloads"] = instance.downloads.count()
-        data["duration"] = instance.duration.count()
+        # data["duration"] = instance.duration.count()
         return data
 
 
