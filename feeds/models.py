@@ -1,6 +1,8 @@
+from typing import Iterable
 from django.contrib.auth import get_user_model
 from django.db import models
 from rest_framework import serializers
+
 
 
 User = get_user_model()
@@ -281,8 +283,37 @@ class SharePost(models.Model):
 
 
 class Status(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    caption = models.TextField()
+    file = models.FileField(upload_to="status_files/", blank=True)
 
-    pass
+    tagged_users = models.ManyToManyField(
+        User, related_name="tagged_in_status", blank=True
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def to_dict(self):
+
+        class TaggedUserSerializer(serializers.ModelSerializer):
+            class Meta:
+                model = User
+                fields = ("id", "username")
+
+        tagged_user_serializer = TaggedUserSerializer(
+            self.tagged_users.all(), many=True
+        )
+
+        return {
+            "id": self.id,
+            "caption": self.caption,
+            "tagged_users": tagged_user_serializer.data,
+            "file": self.file.url,
+            "created_at": self.created_at,
+        }
+    
+    
+
 
 
 class Friends(models.Model):

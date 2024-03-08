@@ -200,6 +200,8 @@ PAYSTACK_PUBLIC_KEY = config("PAYSTACK_PUBLIC_KEY")
 PAYSTACK_SECRET_KEY = config("PAYSTACK_SECRET_KEY")
 PAYSTACK_PAYMENT_CALLBACK_URL = config("PAYSTACK_PAYMENT_CALLBACK_URL")
 
+PAYSTACK_BASE_URL = ""
+
 # Twilio Account configuration
 SMS_BACKEND = "sms.backends.twilio.SmsBackend"
 TWILIO_ACCOUNT_SID = config("TWILIO_ACCOUNT_SID")
@@ -250,3 +252,27 @@ else:
 
 # print("Static root: ", STATIC_ROOT)
 # print("Media root: ", MEDIA_ROOT)
+
+
+
+
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ["json"]
+
+CELERY_TASK_SERIALIZER = "json"
+
+
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": config("DB_NAME"),
+        "USER": config("DB_USER"),
+        "PASSWORD": config("DB_PASSWORD"),
+        "HOST": config("DB_HOST"),
+        "PORT": config("DB_PORT", default="", cast=int),
+    },
+}

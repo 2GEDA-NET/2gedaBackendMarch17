@@ -5,8 +5,7 @@ from . import api
 app_name = "feeds"
 
 urlpatterns = [
-    path("posts", api.PostListAPIView.as_view(), name="all_post_on_feed"),
-
+    path("posts/", api.PostListAPIView.as_view(), name="all_post_on_feed"),
     path("post/", api.PostAPIView.as_view(), name="post_feed"),
     path("post/<int:post_id>/", api.SinglePostView.as_view(), name="post_single"),
     path(
@@ -32,4 +31,21 @@ urlpatterns = [
     path("post/save/", api.SavedPostAPIView.as_view(), name="saved_post"),
     path("post/<int:post_id>/save/", api.SavePostAPIView.as_view(), name="save_post"),
     path("post/report/", api.ReportPostAPIView.as_view(), name="report_post"),
+
+    path("friends/", 
+         api.FriendsAPIView.as_view(), 
+         name="feeds_friends"
+    ),
+
+
+    path("status/", 
+        api.StatusAPIView.as_view(), 
+        name="status_friends"
+    ),
+
+
+    path("status/<int:status_id>/", 
+        api.SingleStatusAPIView.as_view(), 
+        name="status_friends"
+    ),
 ]

@@ -1,4 +1,5 @@
 from django.db import IntegrityError
+from django.dispatch import receiver
 from rest_framework import serializers
 
 from . import models as m
@@ -22,8 +23,6 @@ class PostFileSerializer(serializers.ModelSerializer):
         )
 
         return instance
-
-
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -145,3 +144,34 @@ class ReturnPostSerializer(serializers.ModelSerializer):
             "is_personal_post",
             "tagged_users",
         )
+
+
+class StatusSerializer(serializers.ModelSerializer):
+    tagged_users = serializers.ListField(required=False)
+
+    class Meta:
+        model = m.Status
+        fields = ("caption", "file", "tagged_users")
+
+    def create(self, validated_data):
+
+        user = self.context["user"]
+
+        tagged_users_data = list(
+            map(int, validated_data.pop("tagged_users", [])[0].split(", "))
+        )
+
+        instance = m.Status.objects.create(user=user, **validated_data)
+
+        try:
+            instance.tagged_users.set(tagged_users_data)
+
+        except IntegrityError as e:
+            raise BadRequestException(
+                "One or more user IDs in the tagged users do not exist"
+            )
+
+        return instance
+    
+
+

@@ -28,3 +28,8 @@ DATABASES = {
 # Paystack setup
 PAYSTACK_SECRET_KEY = config("PAYSTACK_SECRET_KEY")
 PAYSTACK_BASE_URL = config("PAYSTACK_BASE_URL")
+
+
+
+
+

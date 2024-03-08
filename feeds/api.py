@@ -335,10 +335,7 @@ class AddFilePostAPIView(APIView):
 
             serializer = s.PostFileSerializer(
                 data={"file": file},
-                context={
-                    "post": post,
-                    "file_type": file.content_type
-                },
+                context={"post": post, "file_type": file.content_type},
             )
 
             if not serializer.is_valid():
@@ -350,7 +347,6 @@ class AddFilePostAPIView(APIView):
 
             validated_files.append(instance)
 
-        
         post.file.add(*validated_files)
 
         context = {"post": post.to_dict()}
@@ -422,14 +418,14 @@ class CommentPostAPIView(APIView):
 
 #     def patch(self, request: Request, post_id: int, comment_id: int):
 
-#         comment_data = Comment.objects.filter(
+#         comment_data = m.Comment.objects.filter(
 #             id=comment_id, post=post_id, user=request.user
 #         ).first()
 
 #         if comment_id:
 #             raise NotFoundException("this comment does mno ")
 
-#         serializer = CommentSerializer(
+#         serializer = m.CommentSerializer(
 #             data=request.data, context={"post": post, "user": request.user}
 #         )
 
@@ -511,8 +507,82 @@ class PostListAPIView(APIView):
         friends_posts = m.Post.objects.filter(user__user_friends__friend=request.user)
 
         # additional posts from other users
-        additional_posts = m.Post.objects.exclude(user=request.user).order_by(
-            "-created_at"
-        )[:5]
+        # additional_posts = m.Post.objects.exclude(user=request.user).order_by(
+        #     "-created_at"
+        # )[:5]
 
-        pass
+        post = friends_posts
+
+        context = {"post": post}
+
+        return CustomResponse(data=context, message="all post on user's feed")
+
+
+class StatusAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    parser_classes = (MultiPartParser,)
+
+    def get(self, request: Request):
+
+        status_data = [
+            status.to_dict()
+            for status in m.Status.objects.filter(user=request.user).all()
+        ]
+
+        context = {"status": status_data}
+
+        return CustomResponse(
+            data=context,
+            message="all created status",
+        )
+
+    def post(self, request: Request):
+
+        serializer = s.StatusSerializer(
+            data=request.data, context={"user": request.user}
+        )
+
+        if not serializer.is_valid():
+            raise BadRequestException(
+                message=serializer.error_messages, data=serializer.errors
+            )
+
+        instance = serializer.save()
+
+        context = {"status": instance.to_dict()}
+
+        return CustomResponse(
+            data=context,
+            message="created status successfully",
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class SingleStatusAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request, status_id: int):
+
+        status_data = m.Status.objects.filter(id=status_id).first()
+
+        if status_data is None:
+            raise NotFoundException("this status does not exist for this user")
+        
+        context = {"status": status_data.to_dict()}
+
+        return CustomResponse(data=context, message="get single status")
+
+
+    def delete(self, request: Request, status_id: int):
+
+        status_data = m.Status.objects.filter(id=status_id, user=request.user).first()
+
+        if status_data is None:
+            raise NotFoundException("this status does not exist for this user")
+
+        status_data.delete()
+
+        return CustomResponse(message="deleted status successfully",)
