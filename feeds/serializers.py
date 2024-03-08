@@ -25,6 +25,28 @@ class PostFileSerializer(serializers.ModelSerializer):
         return instance
 
 
+
+
+class CommentFileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = m.CommentFile
+        fields = ("file",)
+
+    def create(self, validated_data):
+
+        comment = self.context["comment"]
+
+        file_type = self.context["file_type"]
+
+        instance = m.CommentFile.objects.create(
+            comment=comment, file_type=file_type, **validated_data
+        )
+
+        return instance
+
+
+
+
 class PostSerializer(serializers.ModelSerializer):
     file = PostFileSerializer(required=False, allow_null=True)
     hashtags = serializers.ListSerializer(child=serializers.CharField(), required=False)
@@ -72,7 +94,9 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = m.Comment
-        fields = ("text_content",)
+        fields = (
+            "text_content",
+        )
 
     def create(self, validated_data):
 
@@ -172,6 +196,3 @@ class StatusSerializer(serializers.ModelSerializer):
             )
 
         return instance
-    
-
-

@@ -152,6 +152,12 @@ class Comment(models.Model):
             "sad_count": self.sad_count,
             "angry_count": self.angry_count,
         }
+    
+
+    def get_file(self):
+
+        return self.file.to_dict() if self.file else None
+
 
     def to_dict(self):
 
@@ -164,12 +170,20 @@ class Comment(models.Model):
             self.reactions.all(), many=True
         )
 
+        class TaggedUserSerializer(serializers.ModelSerializer):
+            class Meta:
+                model = User
+                fields = ("id", "username")
+
+
+        tagged_user = TaggedUserSerializer(self.user)
+
         return {
             "id": self.id,
             "post": self.post.id,
-            "user": self.user.id,
+            "user": dict(tagged_user.data),
             "text_content": self.text_content,
-            "file": str(self.file.id) if self.file else None,
+            "file": self.get_file(),
             "reaction": self.get_reactions(),
             "created_at": str(self.created_at),
         }

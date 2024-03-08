@@ -13,21 +13,25 @@ urlpatterns = [
         api.CommentPostAPIView.as_view(),
         name="comment_on_post",
     ),
-    # path(
-    #     "post/<int:post_id>/comments/<int:comment_id>/",
-    #     api.SingleCommentAPIView.as_view(),
-    #     name="comment-single",
-    # ),
+
+    path(
+        "post/<int:post_id>/comments/<int:comment_id>/",
+        api.SingleCommentAPIView.as_view(),
+        name="comment-single",
+    ),
+
     path(
         "post/<int:post_id>/reactions/",
         api.ReactionPostView.as_view(),
         name="reaction_on_post",
     ),
+
     path(
         "post/<int:post_id>/file/",
         api.AddFilePostAPIView.as_view(),
         name="add_file_on_post",
     ),
+    
     path("post/save/", api.SavedPostAPIView.as_view(), name="saved_post"),
     path("post/<int:post_id>/save/", api.SavePostAPIView.as_view(), name="save_post"),
     path("post/report/", api.ReportPostAPIView.as_view(), name="report_post"),

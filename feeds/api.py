@@ -377,6 +377,8 @@ class CommentPostAPIView(APIView):
 
     permission_classes = [IsAuthenticated, IsBlockedPost]
 
+    parser_classes = (MultiPartParser,)
+
     def get(self, request: Request, post_id: int):
 
         comment_data = m.Comment.objects.filter(post=post_id).all()
@@ -393,15 +395,48 @@ class CommentPostAPIView(APIView):
 
         if not post:
             raise NotFoundException("this post does not exist")
+        
 
         serializer = s.CommentSerializer(
             data=request.data, context={"post": post, "user": request.user}
         )
 
+
         if not serializer.is_valid():
             raise BadRequestException(
                 message=serializer.error_messages, data=serializer.errors
+        )
+
+
+
+
+        file_instance = None
+
+        if request.data.get("file"):
+
+            file_serializer = s.CommentFileSerializer(
+                data={"file": request.data.get("file")},
+                context={
+                    "file_type": request.data.get("file").content_type,
+                    "comment": comment_data,
+                },
             )
+
+        
+        
+
+
+        if not file_serializer.is_valid():
+            raise BadRequestException(
+                message=file_serializer.error_messages, data=file_serializer.errors
+            )
+        
+
+        file_instance = file_serializer.save()
+
+        
+
+        
 
         instance = serializer.save()
 
@@ -412,28 +447,63 @@ class CommentPostAPIView(APIView):
         )
 
 
-# class SingleCommentAPIView(APIView):
+class SingleCommentAPIView(APIView):
 
-#     permission_classes = [IsAuthenticated, IsBlockedPost]
+    permission_classes = [IsAuthenticated, IsBlockedPost]
 
-#     def patch(self, request: Request, post_id: int, comment_id: int):
+    parser_classes = (MultiPartParser,)
 
-#         comment_data = m.Comment.objects.filter(
-#             id=comment_id, post=post_id, user=request.user
-#         ).first()
+    def patch(self, request: Request, post_id: int, comment_id: int):
 
-#         if comment_id:
-#             raise NotFoundException("this comment does mno ")
+        comment_data = m.Comment.objects.filter(
+            id=comment_id, post=post_id, user=request.user
+        ).first()
 
-#         serializer = m.CommentSerializer(
-#             data=request.data, context={"post": post, "user": request.user}
-#         )
+        if not comment_data:
+            raise NotFoundException("this comment does not exist")
+        
 
-#         context = {"comments": comments}
+        file_instance = None
 
-#         return CustomResponse(data=context, message="get posts comments")
+        if request.data.get("file"):
 
-#     pass
+            file_serializer = s.CommentFileSerializer(
+                data={"file": request.data.get("file")},
+                context={
+                    "file_type": request.data.get("file").content_type,
+                    "comment": comment_data,
+                },
+            )
+
+            if not file_serializer.is_valid():
+                raise BadRequestException(
+                    message=file_serializer.error_messages, data=file_serializer.errors
+                )
+            
+
+            file_instance = file_serializer.save()
+
+        serializer = s.CommentSerializer(
+            data=request.data, context={"comment": comment_data, "user": request.user}
+        )
+
+        if not serializer.is_valid():
+
+            raise BadRequestException(
+                message=serializer.error_messages, data=serializer.errors
+            )
+
+        comment_data.text_content = serializer.validated_data["text_content"]
+        
+
+        if file_instance:
+            comment_data.file = file_instance
+
+        comment_data.save()
+
+        context = {"comment": comment_data.to_dict()}
+
+        return CustomResponse(data=context, message="updated comment on post")
 
 
 class FriendsAPIView(APIView):
@@ -570,11 +640,10 @@ class SingleStatusAPIView(APIView):
 
         if status_data is None:
             raise NotFoundException("this status does not exist for this user")
-        
+
         context = {"status": status_data.to_dict()}
 
         return CustomResponse(data=context, message="get single status")
-
 
     def delete(self, request: Request, status_id: int):
 
@@ -585,4 +654,6 @@ class SingleStatusAPIView(APIView):
 
         status_data.delete()
 
-        return CustomResponse(message="deleted status successfully",)
+        return CustomResponse(
+            message="deleted status successfully",
+        )
