@@ -412,28 +412,28 @@ class CommentPostAPIView(APIView):
         )
 
 
-# class SingleCommentAPIView(APIView):
+class SingleCommentAPIView(APIView):
 
-#     permission_classes = [IsAuthenticated, IsBlockedPost]
+    permission_classes = [IsAuthenticated, IsBlockedPost]
 
-#     def patch(self, request: Request, post_id: int, comment_id: int):
+    def patch(self, request: Request, post_id: int, comment_id: int):
 
-#         comment_data = m.Comment.objects.filter(
-#             id=comment_id, post=post_id, user=request.user
-#         ).first()
+        comment_data = m.Comment.objects.filter(
+            id=comment_id, post=post_id, user=request.user
+        ).first()
 
-#         if comment_id:
-#             raise NotFoundException("this comment does mno ")
+        if comment_id:
+            raise NotFoundException("this comment does mno ")
 
-#         serializer = m.CommentSerializer(
-#             data=request.data, context={"post": post, "user": request.user}
-#         )
+        serializer = m.CommentSerializer(
+            data=request.data, context={"post": post, "user": request.user}
+        )
 
-#         context = {"comments": comments}
+        context = {"comments": comments}
 
-#         return CustomResponse(data=context, message="get posts comments")
+        return CustomResponse(data=context, message="get posts comments")
 
-#     pass
+    pass
 
 
 class FriendsAPIView(APIView):
