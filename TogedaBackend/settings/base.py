@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "stereo",
     "payments",
     "feeds",
+    "notifications",
 ]
 
 MIDDLEWARE = [
@@ -132,16 +133,18 @@ INTERNAL_IPS = [
 
 # Add DRF authentication and permission classes
 REST_FRAMEWORK = {
-    # "DEFAULT_AUTHENTICATION_CLASSES": [
-    #     "rest_framework.authentication.TokenAuthentication",
-    # ],
-    # "DEFAULT_PERMISSION_CLASSES": [
-    #     "rest_framework.permissions.IsAuthenticated",
-    # ],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "authentication.auth.TokenAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+        # "authentication.permissions.IsVerifiedPermission",
+    ],
     "DEFAULT_PARSER_CLASSES": [
         "rest_framework.parsers.FormParser",
-        "rest_framework.parsers.MultiPartParser",
         "rest_framework.parsers.JSONParser",
+        "rest_framework.parsers.MultiPartParser",
+        "rest_framework.parsers.FileUploadParser",
     ],
     "DEFAULT_SCHEMA_CLASS": "rest_framework.schemas.coreapi.AutoSchema",
     "EXCEPTION_HANDLER": "utils.exception_handler.custom_exception_handler",
@@ -188,7 +191,7 @@ TWILIO_PHONE_NUMBER = config("TWILIO_PHONE_NUMBER")
 
 STATICFILES_DIRS = [BASE_DIR / "notifications/static"]
 
-if config("SEND_EMAIL", cast=bool):
+if not config("SEND_EMAIL", cast=bool):
     EMAIL_HOST = config("EMAIL_HOST")
     EMAIL_HOST_USER = config("EMAIL_HOST_USER")
     EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")

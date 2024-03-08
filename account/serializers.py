@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 from authentication.serializers import ReadOnlyUserSerializer
 from . import models as m
+from . import choices
 
 User = get_user_model()
 
@@ -79,6 +80,11 @@ class UserProfileUpdateSerializer(UserProfileSerializer):
 
 
 class UserProfileMediaSerializer(serializers.ModelSerializer):
+
+    media_file = serializers.FileField(required=True)
+    media_type = serializers.ChoiceField(choices=choices.MEDIA_TYPES, required=True)
+
     class Meta:
         model = m.UserProfileMedia
         fields = "__all__"
+        read_only_fields = ["profile"]

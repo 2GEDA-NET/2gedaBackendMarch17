@@ -41,6 +41,7 @@ api_routes = [
     path("business/", include("business.urls", namespace="business")),
     path("education/", include("education.urls", namespace="education")),
     path("feeds/", include("feeds.urls", namespace="feeds")),
+    path("notifications/", include("notifications.urls", namespace="notifications")),
     path("polls/", include("poll.urls", namespace="poll")),
     path("stereo/", include("stereo.urls", namespace="stereo")),
 ]
@@ -48,12 +49,12 @@ api_routes = [
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", include(api_routes)),
+    path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
     path(
         "swagger/",
         schema_view.with_ui("swagger", cache_timeout=0),
         name="schema-swagger-ui",
     ),
-    path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
 ]
 
 if not settings.USE_S3:

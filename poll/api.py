@@ -4,6 +4,7 @@ from rest_framework import decorators, status, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from notifications.utils import send_notification
 from utils import renderers
 
 from . import models as m
@@ -28,7 +29,7 @@ class PollsAPI(renderers.ReadOnlyModelRenderer, viewsets.GenericViewSet):
 
     def get_serializer_class(self):
         if self.action == "vote":
-            return s.WriteOnlyPollOptionSerializer
+            return s.VoteOptionSerializer
         return s.PollSerializer
 
     @decorators.action(methods=["GET"], detail=False, url_path="paid")
@@ -100,6 +101,8 @@ class PollsAPI(renderers.ReadOnlyModelRenderer, viewsets.GenericViewSet):
                 # add user to the actual poll
                 # whether he/she has voted so to keep track/record
                 poll.voters.add(profile)
+                # send notification to the poll creator
+                send_notification(poll.creator, action="vote")
                 return Response(
                     {"message": "Voted!", "status": True}, status=status.HTTP_200_OK
                 )
@@ -117,7 +120,6 @@ class UserPollAPI(renderers.CrudModelRenderer, viewsets.GenericViewSet):
 
     # permission_classes = [IsAuthenticated, IsPollCreatorPermission]
     lookup_url_kwarg = "poll_id"
-    serializer_class = s.PollSerializer
 
     params = [openapi.Parameter("find", in_=openapi.IN_QUERY, type=openapi.TYPE_STRING)]
 
@@ -130,6 +132,11 @@ class UserPollAPI(renderers.CrudModelRenderer, viewsets.GenericViewSet):
 
     def get_queryset(self):
         return m.Poll.objects.filter(creator=self.request.user.profile)
+
+    def get_serializer_class(self):
+        if self.action in ["update", "partial_update"]:
+            return s.PollUpdateSerializer
+        return s.PollSerializer
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user.profile)

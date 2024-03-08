@@ -51,12 +51,13 @@ class MinimalArtistSerializer(serializers.ModelSerializer):
 
 
 class SongSerializer(serializers.ModelSerializer):
-    artist = MinimalArtistSerializer(read_only=True)
+    # artist = MinimalArtistSerializer(read_only=True)
     categories = serializers.SerializerMethodField()
 
     class Meta:
         model = m.Song
-        exclude = ["category"]
+        fields = "__all__"
+        read_only_fields = ["downloads", "plays", "likes", "category", "artist"]
 
     def get_categories(self, instance):
         categories = m.SongCategory.objects.filter()
@@ -67,7 +68,7 @@ class SongSerializer(serializers.ModelSerializer):
         data["likes"] = instance.likes.count()
         data["plays"] = instance.plays.count()
         data["downloads"] = instance.downloads.count()
-        data["duration"] = instance.duration.count()
+        # data["duration"] = instance.duration.count()
         return data
 
 

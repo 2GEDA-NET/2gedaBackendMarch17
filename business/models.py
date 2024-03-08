@@ -135,6 +135,7 @@ class PhoneNumber(models.Model):
 
 
 class BusinessTimeAvailability(models.Model):
+
     open_from = models.TimeField(_("Open"))
     close_at = models.TimeField(_("Close"))
 
@@ -143,6 +144,7 @@ class BusinessTimeAvailability(models.Model):
 
 
 class BusinessDayAvailability(models.Model):
+
     business = models.ForeignKey(
         to=BusinessAccount, verbose_name=_("Business"), on_delete=models.CASCADE
     )

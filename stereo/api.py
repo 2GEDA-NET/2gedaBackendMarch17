@@ -31,10 +31,11 @@ class ArtistAPI(renderers.ReadOnlyModelRenderer, viewsets.GenericViewSet):
         data = {"message": "Success", "status": True, "data": data}
         return Response(data, status=status.HTTP_200_OK)
 
-    @decorators.action(methods=["GET"], detail=False, url_path="register")
+    @decorators.action(methods=["POST"], detail=False, url_path="register")
     def create_artist(self, request, *args, **kwargs):
         serializer = s.ArtistSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        serializer.save()
         data = {"message": "Created", "status": True, "data": serializer.data}
         return Response(data, status=status.HTTP_201_CREATED)
 
@@ -77,11 +78,21 @@ class AlbumAPI(renderers.CrudModelRenderer, viewsets.GenericViewSet):
 
     @decorators.action(methods=["GET"], detail=False, url_path="top-album")
     def top_album(self, request, *args, **kwargs):
-        pass
+        albums = self.queryset.order_by("-created_at")
+        data = self.serializer_class(albums, many=True).data
+        return Response(
+            {"message": "Success", "status": True, "data": data},
+            status=status.HTTP_200_OK,
+        )
 
     @decorators.action(methods=["GET"], detail=False, url_path="recent-album")
     def recent_album(self, request, *args, **kwargs):
-        pass
+        albums = self.queryset.order_by("-created_at")
+        data = self.serializer_class(albums, many=True).data
+        return Response(
+            {"message": "Success", "status": True, "data": data},
+            status=status.HTTP_200_OK,
+        )
 
 
 class SongAPI(renderers.CrudModelRenderer, viewsets.GenericViewSet):
@@ -117,23 +128,78 @@ class SongAPI(renderers.CrudModelRenderer, viewsets.GenericViewSet):
 
     @decorators.action(methods=["GET"], detail=True, url_path="download")
     def download(self, request, *args, **kwargs):
-        pass
+        song_id = kwargs.get("song_id", 0)
+        songs = m.Song.objects.filter(pk=int(song_id))
+        if songs.exists():
+            song = songs.first()
+            song.downloads.add(request.user.profile)
+            return Response(
+                {
+                    "message": "Download",
+                    "status": True,
+                    "data": s.SongSerializer(song).data,
+                },
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {"message": "Invalid song id.", "status": False}, status=status.HTTP_200_OK
+        )
 
     @decorators.action(methods=["GET"], detail=True, url_path="play")
     def play(self, request, *args, **kwargs):
-        pass
+        song_id = kwargs.get("song_id", 0)
+        songs = m.Song.objects.filter(pk=int(song_id))
+        if songs.exists():
+            song = songs.first()
+            song.plays.add(request.user.profile)
+            return Response(
+                {
+                    "message": "Play",
+                    "status": True,
+                    "data": s.SongSerializer(song).data,
+                },
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {"message": "Invalid song id.", "status": False}, status=status.HTTP_200_OK
+        )
 
     @decorators.action(methods=["GET"], detail=True, url_path="like")
     def like(self, request, *args, **kwargs):
-        pass
+        song_id = kwargs.get("song_id", 0)
+        songs = m.Song.objects.filter(pk=int(song_id))
+        if songs.exists():
+            song = songs.first()
+            song.likes.add(request.user.profile)
+            return Response(
+                {
+                    "message": "Like",
+                    "status": True,
+                    "data": s.SongSerializer(song).data,
+                },
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {"message": "Invalid song id.", "status": False}, status=status.HTTP_200_OK
+        )
 
     @decorators.action(methods=["GET"], detail=False, url_path="trending")
     def trending(self, request, *args, **kwargs):
-        pass
+        songs = self.get_queryset().order_by("-uploaded_at")
+        data = self.serializer_class(songs, many=True).data
+        return Response(
+            {"message": "Success", "status": True, "data": data},
+            status=status.HTTP_200_OK,
+        )
 
     @decorators.action(methods=["GET"], detail=False, url_path="recent_upload")
     def recent_upload(self, request, *args, **kwargs):
-        pass
+        songs = self.get_queryset().order_by("-uploaded_at")
+        data = self.serializer_class(songs, many=True).data
+        return Response(
+            {"message": "Success", "status": True, "data": data},
+            status=status.HTTP_200_OK,
+        )
 
 
 class SongLibraryAPI(viewsets.GenericViewSet):
