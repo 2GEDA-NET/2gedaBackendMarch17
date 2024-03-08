@@ -90,6 +90,11 @@ class PostSerializer(serializers.ModelSerializer):
         return instance
 
 
+
+
+
+
+
 class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -109,6 +114,11 @@ class CommentSerializer(serializers.ModelSerializer):
         post.comments.add(instance)
 
         return instance
+
+
+
+
+
 
 
 class ReactionPostSerializer(serializers.ModelSerializer):
