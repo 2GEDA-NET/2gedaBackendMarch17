@@ -414,33 +414,19 @@ class CommentPostAPIView(APIView):
         if not post:
             raise NotFoundException("this post does not exist")
 
+        comment_serializer_context = {"post": post, "user": request.user}
+
+        if request.data.get("file"):
+            comment_serializer_context.update({"file": request.data.get("file")})
+
         serializer = s.CommentSerializer(
-            data=request.data, context={"post": post, "user": request.user}
+            data=request.data, context=comment_serializer_context
         )
 
         if not serializer.is_valid():
             raise BadRequestException(
                 message=serializer.error_messages, data=serializer.errors
             )
-
-        file_instance = None
-
-        if request.data.get("file"):
-
-            file_serializer = s.CommentFileSerializer(
-                data={"file": request.data.get("file")},
-                context={
-                    "file_type": request.data.get("file").content_type,
-                    "comment": comment_data,
-                },
-            )
-
-        if not file_serializer.is_valid():
-            raise BadRequestException(
-                message=file_serializer.error_messages, data=file_serializer.errors
-            )
-
-        file_instance = file_serializer.save()
 
         instance = serializer.save()
 
@@ -466,7 +452,7 @@ class SingleCommentAPIView(APIView):
         if not comment_data:
             raise NotFoundException("this comment does not exist")
 
-        file_instance = None
+        file_serializer = None
 
         if request.data.get("file"):
 
@@ -483,8 +469,6 @@ class SingleCommentAPIView(APIView):
                     message=file_serializer.error_messages, data=file_serializer.errors
                 )
 
-            file_instance = file_serializer.save()
-
         serializer = s.CommentSerializer(
             data=request.data, context={"comment": comment_data, "user": request.user}
         )
@@ -495,10 +479,28 @@ class SingleCommentAPIView(APIView):
                 message=serializer.error_messages, data=serializer.errors
             )
 
+        # Check whether there was an existing file, if user updates the comment with a file
+
+        file_instance = None
+        if file_serializer:
+            if comment_data.file:
+                comment_file_instance = comment_data.file
+
+                file_path = comment_data.file.file.path
+
+                default_storage.delete(file_path)
+
+                comment_file_instance.delete()
+
+                comment_data.file = None
+
+            file_instance = file_serializer.save()
+        
+            
+
         comment_data.text_content = serializer.validated_data["text_content"]
 
-        if file_instance:
-            comment_data.file = file_instance
+        comment_data.file = file_instance
 
         comment_data.save()
 

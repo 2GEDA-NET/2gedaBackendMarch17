@@ -2,7 +2,7 @@ from rest_framework import permissions
 
 from feeds.models import Post
 
-# from account.models import BlockedUsers
+from account.models import BlockedUsers
 from utils.exception import BadRequestException, NotFoundException
 
 

@@ -25,8 +25,6 @@ class PostFileSerializer(serializers.ModelSerializer):
         return instance
 
 
-
-
 class CommentFileSerializer(serializers.ModelSerializer):
     class Meta:
         model = m.CommentFile
@@ -43,8 +41,6 @@ class CommentFileSerializer(serializers.ModelSerializer):
         )
 
         return instance
-
-
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -90,18 +86,11 @@ class PostSerializer(serializers.ModelSerializer):
         return instance
 
 
-
-
-
-
-
 class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = m.Comment
-        fields = (
-            "text_content",
-        )
+        fields = ("text_content",)
 
     def create(self, validated_data):
 
@@ -109,16 +98,30 @@ class CommentSerializer(serializers.ModelSerializer):
 
         user = self.context["user"]
 
-        instance = m.Comment.objects.create(user=user, post=post, **validated_data)
+        file = self.context.get("file")
 
-        post.comments.add(instance)
+        if file:
+            file_serializer = CommentFileSerializer(data={"file": file})
+            if not file_serializer.is_valid():
+                raise BadRequestException(
+                    message=file_serializer.error_messages, data=file_serializer.errors
+                )
 
-        return instance
+        comment_instance = m.Comment.objects.create(
+            user=user, post=post, **validated_data
+        )
 
+        post.comments.add(comment_instance)
 
+        comment_file_instance = m.CommentFile.objects.create(
+            comment=comment_instance, file=file, file_type=file.content_type
+        )
 
+        comment_instance.file = comment_file_instance
 
+        comment_instance.save()
 
+        return comment_instance
 
 
 class ReactionPostSerializer(serializers.ModelSerializer):

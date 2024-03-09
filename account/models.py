@@ -98,23 +98,27 @@ class UserCoverImage(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
 
+from django.contrib.auth import get_user_model
 
-# class BlockedUsers(models.Model):
-#     user = models.ForeignKey(
-#         "User", on_delete=models.CASCADE, related_name="blocked_users_set"
-#     )
-#     blocked_user = models.ForeignKey(
-#         "User", on_delete=models.CASCADE, related_name="blocked_by_set"
-#     )
-#     reason = models.TextField(blank=True, null=True)
-#     created_at = models.DateTimeField(auto_now_add=True)
 
-#     def __str__(self):
-#         return f"{self.blocker} blocked {self.blocked_user}"
+User = get_user_model()
 
-#     def to_dict(self):
+class BlockedUsers(models.Model):
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="blocked_users_set"
+    )
+    blocked_user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="blocked_by_set"
+    )
+    reason = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
-#         return {
-#             "blocked_user": self.blocked_user.id,
-#             "created_at": str(self.created_at),
-#         }
+    def __str__(self):
+        return f"{self.blocker} blocked {self.blocked_user}"
+
+    def to_dict(self):
+
+        return {
+            "blocked_user": self.blocked_user.id,
+            "created_at": str(self.created_at),
+        }

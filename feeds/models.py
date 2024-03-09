@@ -26,7 +26,7 @@ class CommentFile(models.Model):
     file_type = models.CharField(max_length=100, null=True)
 
     def to_dict(self):
-        return {"file": self.file.url, "file_type": self.file_type}
+        return {"file_id":self.id, "file": self.file.url, "file_type": self.file_type}
 
 
 class Post(models.Model):
@@ -340,3 +340,8 @@ class ReportPost(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     reason = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+
+
+
