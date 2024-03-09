@@ -507,6 +507,249 @@ class SingleCommentAPIView(APIView):
         context = {"comment": comment_data.to_dict()}
 
         return CustomResponse(data=context, message="updated comment on post")
+    
+
+
+    def delete(self, request: Request, post_id: int, comment_id: int):
+
+        comment_data = m.Comment.objects.filter(
+            id=comment_id, post=post_id, user=request.user
+        ).first()
+
+
+        if not comment_data:
+            raise NotFoundException("this comment does not exist")
+        
+
+        if comment_data.file:
+                comment_file_instance = comment_data.file
+
+                file_path = comment_data.file.file.path
+
+                default_storage.delete(file_path)
+
+                comment_file_instance.delete()
+
+                comment_data.file = None
+
+        comment_data.delete()
+
+
+        return CustomResponse(message="deleted comment on post")
+    
+        
+
+
+
+class ReactionCommentView(APIView):
+
+    permission_classes = [IsAuthenticated, IsBlockedPost]
+
+    def get(self, request: Request, post_id: int, comment_id:int):
+
+        comment = m.Comment.objects.filter(id=comment_id, post=post_id).first()
+
+        if not comment:
+            raise NotFoundException("this comment does not exist")
+
+        context = {
+            "reactions": comment.get_reactions(),
+            "comment": {"id": comment.id},
+        }
+
+        return CustomResponse(data=context, message="all reactions on this comment")
+
+    def post(self, request: Request, post_id: int, comment_id:int):
+
+        comment = m.Comment.objects.filter(id=comment_id, post=post_id).first()
+
+        if not comment:
+            raise NotFoundException("this comment does not exist")
+
+        serializer = s.ReactionCommentSerializer(
+            data=request.data, context={"comment": comment, "user": request.user}
+        )
+
+        if not serializer.is_valid():
+            raise BadRequestException(
+                message=serializer.error_messages, data=serializer.errors
+            )
+
+        reaction = m.CommentReaction.objects.filter(comment=comment, user=request.user).first()
+
+        if reaction:
+
+            if serializer.validated_data["reaction_type"] != reaction.reaction_type:
+
+                if reaction.reaction_type == 1:
+
+                    if comment.like_count > 0:
+                        comment.like_count -= 1
+
+                        if serializer.validated_data["reaction_type"] == 2:
+                            comment.dislike_count += 1
+
+                        elif serializer.validated_data["reaction_type"] == 3:
+                            comment.love_count += 1
+
+                        elif serializer.validated_data["reaction_type"] == 4:
+                            comment.sad_count += 1
+
+                        elif serializer.validated_data["reaction_type"] == 5:
+                            comment.angry_count += 1
+
+                elif reaction.reaction_type == 2:
+
+                    if comment.dislike_count > 0:
+                        comment.dislike_count -= 1
+
+                    if serializer.validated_data["reaction_type"] == 1:
+                        comment.like_count += 1
+
+                    elif serializer.validated_data["reaction_type"] == 3:
+                        comment.love_count += 1
+
+                    elif serializer.validated_data["reaction_type"] == 4:
+                        comment.sad_count += 1
+
+                    elif serializer.validated_data["reaction_type"] == 5:
+                        comment.angry_count += 1
+
+                elif reaction.reaction_type == 3:
+
+                    if comment.love_count > 0:
+                        comment.love_count -= 1
+
+                    if serializer.validated_data["reaction_type"] == 1:
+                        comment.like_count += 1
+
+                    elif serializer.validated_data["reaction_type"] == 2:
+                        comment.dislike_count += 1
+
+                    elif serializer.validated_data["reaction_type"] == 4:
+                        comment.sad_count += 1
+
+                    elif serializer.validated_data["reaction_type"] == 5:
+                        comment.angry_count += 1
+
+                elif reaction.reaction_type == 4:
+
+                    if comment.sad_count > 0:
+
+                        comment.sad_count -= 1
+
+                    if serializer.validated_data["reaction_type"] == 1:
+                        comment.like_count += 1
+
+                    elif serializer.validated_data["reaction_type"] == 2:
+                        comment.dislike_count += 1
+
+                    elif serializer.validated_data["reaction_type"] == 3:
+                        comment.love_count += 1
+
+                    elif serializer.validated_data["reaction_type"] == 5:
+                        comment.angry_count += 1
+
+                elif reaction.reaction_type == 5:
+
+                    if comment.angry_count > 0:
+                        comment.angry_count -= 1
+
+                    if serializer.validated_data["reaction_type"] == 1:
+                        comment.like_count += 1
+
+                    elif serializer.validated_data["reaction_type"] == 2:
+                        comment.dislike_count += 1
+
+                    elif serializer.validated_data["reaction_type"] == 3:
+                        comment.love_count += 1
+
+                    elif serializer.validated_data["reaction_type"] == 4:
+                        comment.sad_count += 1
+
+            comment.save()
+            reaction.reaction_type = serializer.validated_data["reaction_type"]
+            reaction.save()
+
+        else:
+            if serializer.validated_data["reaction_type"] == 1:
+                comment.like_count += 1
+
+            elif serializer.validated_data["reaction_type"] == 2:
+                comment.dislike_count += 1
+
+            elif serializer.validated_data["reaction_type"] == 3:
+                comment.love_count += 1
+
+            elif serializer.validated_data["reaction_type"] == 4:
+                comment.sad_count += 1
+
+            elif serializer.validated_data["reaction_type"] == 5:
+                comment.angry_count += 1
+
+            comment.save()
+            instance = serializer.save()
+
+        context = {
+            "reaction": instance.to_dict() if not reaction else reaction.to_dict(),
+            "comment": comment.to_dict(),
+        }
+        return CustomResponse(data=context, message="added reaction to comment succussfuly")
+    
+
+
+    def delete(self, request: Request, post_id:int, comment_id: int):
+
+        comment = m.Comment.objects.filter(id=comment_id, user=request.user).first()
+
+        serializer = s.ReactionCommentSerializer(data=request.data)
+
+        if not comment:
+            raise NotFoundException("this comment does not exist")
+
+        if not serializer.is_valid():
+            raise BadRequestException(
+                message=serializer.error_messages, data=serializer.errors
+            )
+
+        reaction = m.CommentReaction.objects.filter(
+            comment=comment,
+            user=request.user,
+            reaction_type=serializer.validated_data["reaction_type"]
+        ).first()
+
+        if reaction is None:
+
+            raise BadRequestException("this reaction does not exist for this comment")
+
+        if serializer.validated_data["reaction_type"] == 1:
+            comment.like_count -= 1
+
+        elif serializer.validated_data["reaction_type"] == 2:
+            comment.dislike_count -= 1
+
+        elif serializer.validated_data["reaction_type"] == 3:
+            comment.love_count -= 1
+
+        elif serializer.validated_data["reaction_type"] == 4:
+            comment.sad_count -= 1
+
+        elif serializer.validated_data["reaction_type"] == 5:
+            comment.angry_count -= 1
+
+        reaction.delete()
+
+        comment.save()
+
+        return CustomResponse(message="removed reaction succussfully")
+
+
+
+
+    
+
+
+
 
 
 class FriendsAPIView(APIView):

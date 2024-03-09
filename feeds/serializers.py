@@ -141,6 +141,25 @@ class ReactionPostSerializer(serializers.ModelSerializer):
         return instance
 
 
+
+class ReactionCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = m.CommentReaction
+        fields = ("reaction_type",)
+
+    def create(self, validated_data):
+
+        comment = self.context["comment"]
+
+        user = self.context["user"]
+
+        instance = m.CommentReaction.objects.create(user=user, comment=comment, **validated_data)
+
+        return instance
+
+
+
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = m.User

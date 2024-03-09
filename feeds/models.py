@@ -158,15 +158,6 @@ class Comment(models.Model):
 
     def to_dict(self):
 
-        class CommentReactionSerializer(serializers.ModelSerializer):
-            class Meta:
-                model = CommentReaction
-                fields = ("reaction_type",)
-
-        comment_reaction_serializer = CommentReactionSerializer(
-            self.reactions.all(), many=True
-        )
-
         class TaggedUserSerializer(serializers.ModelSerializer):
             class Meta:
                 model = User
@@ -180,7 +171,7 @@ class Comment(models.Model):
             "user": dict(tagged_user.data),
             "text_content": self.text_content,
             "file": self.get_file(),
-            "reaction": self.get_reactions(),
+            "reactions": self.get_reactions(),
             "created_at": str(self.created_at),
         }
 
@@ -218,11 +209,11 @@ class PostReaction(models.Model):
 
 
 class CommentReaction(models.Model):
-    LIKE = "LIKE"
-    DISLIKE = "DISLIKE"
-    LOVE = "LOVE"
-    SAD = "SAD"
-    ANGRY = "ANGRY"
+    LIKE = 1
+    DISLIKE = 2
+    LOVE = 3
+    SAD = 4
+    ANGRY = 5
 
     REACTION_CHOICES = [
         (LIKE, "Like"),
@@ -233,9 +224,20 @@ class CommentReaction(models.Model):
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
-    reaction_type = models.CharField(max_length=10, choices=REACTION_CHOICES)
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name="comment_reactions")
+    reaction_type = models.SmallIntegerField(choices=REACTION_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+    def to_dict(self):
+
+        return {
+            "reaction_id": self.id,
+            "comment": self.comment.id,
+            "user": self.user.id,
+            "reaction_type": self.reaction_type,
+            "created_at": str(self.created_at),
+        }
 
 
 class Reply(models.Model):
@@ -345,3 +347,23 @@ class ReportPost(models.Model):
 
 
 
+
+class BlockedUsers(models.Model):
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="blocked_users_set"
+    )
+    blocked_user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="blocked_by_set"
+    )
+    reason = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.blocker} blocked {self.blocked_user}"
+
+    def to_dict(self):
+
+        return {
+            "blocked_user": self.blocked_user.id,
+            "created_at": str(self.created_at),
+        }
