@@ -4,7 +4,7 @@ from rest_framework import decorators, status, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from notifications.utils import send_notification
+from notifications.utils.poll import send_notification
 from utils import renderers
 
 from . import models as m

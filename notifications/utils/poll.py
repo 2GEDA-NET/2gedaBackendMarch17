@@ -1,5 +1,6 @@
-from .models import Notification
 from account.models import UserProfile
+
+from ..models import Notification
 
 
 def get_content(action):
@@ -13,7 +14,7 @@ def send_notification(profile: UserProfile, action, to_mail=False):
     if to_mail:
         pass  # TODO send notification to email
     try:
-        content = get_content(action)
+        content = get_content(action).format(profile.user.username)
         Notification.objects.create(profile=profile, action=action, content=content)
     except:
         return False

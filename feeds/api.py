@@ -1,3 +1,4 @@
+from django.core.files.storage import default_storage
 from rest_framework import status
 from rest_framework.exceptions import APIException
 from rest_framework.parsers import MultiPartParser
@@ -10,8 +11,7 @@ from utils.response import CustomResponse
 
 from . import models as m
 from . import serializers as s
-
-# from .permissions impor] #IsBlockedPost
+from .permissions import IsBlockedPost
 
 
 class PostAPIView(APIView):
@@ -333,33 +333,35 @@ class AddFilePostAPIView(APIView):
         if not post:
             raise NotFoundException("this post does not exist")
 
-        if post.file:
-            raise BadRequestException("File already exists for this post")
+        validated_files = []
+        for file in request.FILES.getlist("files"):
 
-        serializer = s.PostFileSerializer(
-            data=request.data,
-            context={
-                "post": post,
-                "file_type": request.data["file"].content_type,
-            },
-        )
-
-        if not serializer.is_valid():
-            raise BadRequestException(
-                message=serializer.error_messages, data=serializer.errors
+            serializer = s.PostFileSerializer(
+                data={"file": file},
+                context={"post": post, "file_type": file.content_type},
             )
 
-        instance = serializer.save()
+            if not serializer.is_valid():
+                raise BadRequestException(
+                    message=serializer.error_messages, data=serializer.errors
+                )
 
-        post.file = instance
+            instance = serializer.save()
 
-        post.save()
+            validated_files.append(instance)
+
+        post.file.add(*validated_files)
 
         context = {"post": post.to_dict()}
 
         return CustomResponse(data=context, message="uploaded file to post ")
 
-    def delete(self, request: Request, post_id: int):
+
+class SingleFilePostAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request: Request, post_id: int, file_id: int):
 
         post = m.Post.objects.filter(id=post_id, user=request.user).first()
 
@@ -370,9 +372,18 @@ class AddFilePostAPIView(APIView):
 
             raise BadRequestException("no file uploaded to this post")
 
-        post.file.delete()
+        file_instance: m.PostFile = post.file.filter(id=file_id).first()
 
-        post.file = None
+        if not file_instance:
+            raise NotFoundException("this file does not exist for this post")
+
+        if file_instance.file:
+            file_path = file_instance.file.path
+
+            default_storage.delete(file_path)
+
+        file_instance.delete()
+
         post.save()
 
         context = {"post": post.to_dict()}
@@ -381,7 +392,9 @@ class AddFilePostAPIView(APIView):
 
 class CommentPostAPIView(APIView):
 
-    permission_classes = [IsAuthenticated]  # IsBlockedPost]
+    permission_classes = [IsAuthenticated, IsBlockedPost]
+
+    parser_classes = (MultiPartParser,)
 
     def get(self, request: Request, post_id: int):
 
@@ -400,8 +413,13 @@ class CommentPostAPIView(APIView):
         if not post:
             raise NotFoundException("this post does not exist")
 
+        comment_serializer_context = {"post": post, "user": request.user}
+
+        if request.data.get("file"):
+            comment_serializer_context.update({"file": request.data.get("file")})
+
         serializer = s.CommentSerializer(
-            data=request.data, context={"post": post, "user": request.user}
+            data=request.data, context=comment_serializer_context
         )
 
         if not serializer.is_valid():
@@ -418,25 +436,453 @@ class CommentPostAPIView(APIView):
         )
 
 
-# class SingleCommentAPIView(APIView):
+class SingleCommentAPIView(APIView):
 
-#     permission_classes = [IsAuthenticated] #IsBlockedPost]
+    permission_classes = [IsAuthenticated, IsBlockedPost]
 
-#     def patch(self, request: Request, post_id: int, comment_id: int):
+    parser_classes = (MultiPartParser,)
 
-#         comment_data = Comment.objects.filter(
-#             id=comment_id, post=post_id, user=request.user
-#         ).first()
+    def patch(self, request: Request, post_id: int, comment_id: int):
 
-#         if comment_id:
-#             raise NotFoundException("this comment does mno ")
+        comment_data = m.Comment.objects.filter(
+            id=comment_id, post=post_id, user=request.user
+        ).first()
 
-#         serializer = CommentSerializer(
-#             data=request.data, context={"post": post, "user": request.user}
-#         )
+        if not comment_data:
+            raise NotFoundException("this comment does not exist")
 
-#         context = {"comments": comments}
+        file_serializer = None
 
-#         return CustomResponse(data=context, message="get posts comments")
+        if request.data.get("file"):
 
-#     pass
+            file_serializer = s.CommentFileSerializer(
+                data={"file": request.data.get("file")},
+                context={
+                    "file_type": request.data.get("file").content_type,
+                    "comment": comment_data,
+                },
+            )
+
+            if not file_serializer.is_valid():
+                raise BadRequestException(
+                    message=file_serializer.error_messages, data=file_serializer.errors
+                )
+
+        serializer = s.CommentSerializer(
+            data=request.data, context={"comment": comment_data, "user": request.user}
+        )
+
+        if not serializer.is_valid():
+
+            raise BadRequestException(
+                message=serializer.error_messages, data=serializer.errors
+            )
+
+        # Check whether there was an existing file, if user updates the comment with a file
+
+        file_instance = None
+        if file_serializer:
+            if comment_data.file:
+                comment_file_instance = comment_data.file
+
+                file_path = comment_data.file.file.path
+
+                default_storage.delete(file_path)
+
+                comment_file_instance.delete()
+
+                comment_data.file = None
+
+            file_instance = file_serializer.save()
+
+        comment_data.text_content = serializer.validated_data["text_content"]
+
+        comment_data.file = file_instance
+
+        comment_data.save()
+
+        context = {"comment": comment_data.to_dict()}
+
+        return CustomResponse(data=context, message="updated comment on post")
+
+    def delete(self, request: Request, post_id: int, comment_id: int):
+
+        comment_data = m.Comment.objects.filter(
+            id=comment_id, post=post_id, user=request.user
+        ).first()
+
+        if not comment_data:
+            raise NotFoundException("this comment does not exist")
+
+        if comment_data.file:
+            comment_file_instance = comment_data.file
+
+            file_path = comment_data.file.file.path
+
+            default_storage.delete(file_path)
+
+            comment_file_instance.delete()
+
+            comment_data.file = None
+
+        comment_data.delete()
+
+        return CustomResponse(message="deleted comment on post")
+
+
+class ReactionCommentView(APIView):
+
+    permission_classes = [IsAuthenticated, IsBlockedPost]
+
+    def get(self, request: Request, post_id: int, comment_id: int):
+
+        comment = m.Comment.objects.filter(id=comment_id, post=post_id).first()
+
+        if not comment:
+            raise NotFoundException("this comment does not exist")
+
+        context = {
+            "reactions": comment.get_reactions(),
+            "comment": {"id": comment.id},
+        }
+
+        return CustomResponse(data=context, message="all reactions on this comment")
+
+    def post(self, request: Request, post_id: int, comment_id: int):
+
+        comment = m.Comment.objects.filter(id=comment_id, post=post_id).first()
+
+        if not comment:
+            raise NotFoundException("this comment does not exist")
+
+        serializer = s.ReactionCommentSerializer(
+            data=request.data, context={"comment": comment, "user": request.user}
+        )
+
+        if not serializer.is_valid():
+            raise BadRequestException(
+                message=serializer.error_messages, data=serializer.errors
+            )
+
+        reaction = m.CommentReaction.objects.filter(
+            comment=comment, user=request.user
+        ).first()
+
+        if reaction:
+
+            if serializer.validated_data["reaction_type"] != reaction.reaction_type:
+
+                if reaction.reaction_type == 1:
+
+                    if comment.like_count > 0:
+                        comment.like_count -= 1
+
+                        if serializer.validated_data["reaction_type"] == 2:
+                            comment.dislike_count += 1
+
+                        elif serializer.validated_data["reaction_type"] == 3:
+                            comment.love_count += 1
+
+                        elif serializer.validated_data["reaction_type"] == 4:
+                            comment.sad_count += 1
+
+                        elif serializer.validated_data["reaction_type"] == 5:
+                            comment.angry_count += 1
+
+                elif reaction.reaction_type == 2:
+
+                    if comment.dislike_count > 0:
+                        comment.dislike_count -= 1
+
+                    if serializer.validated_data["reaction_type"] == 1:
+                        comment.like_count += 1
+
+                    elif serializer.validated_data["reaction_type"] == 3:
+                        comment.love_count += 1
+
+                    elif serializer.validated_data["reaction_type"] == 4:
+                        comment.sad_count += 1
+
+                    elif serializer.validated_data["reaction_type"] == 5:
+                        comment.angry_count += 1
+
+                elif reaction.reaction_type == 3:
+
+                    if comment.love_count > 0:
+                        comment.love_count -= 1
+
+                    if serializer.validated_data["reaction_type"] == 1:
+                        comment.like_count += 1
+
+                    elif serializer.validated_data["reaction_type"] == 2:
+                        comment.dislike_count += 1
+
+                    elif serializer.validated_data["reaction_type"] == 4:
+                        comment.sad_count += 1
+
+                    elif serializer.validated_data["reaction_type"] == 5:
+                        comment.angry_count += 1
+
+                elif reaction.reaction_type == 4:
+
+                    if comment.sad_count > 0:
+
+                        comment.sad_count -= 1
+
+                    if serializer.validated_data["reaction_type"] == 1:
+                        comment.like_count += 1
+
+                    elif serializer.validated_data["reaction_type"] == 2:
+                        comment.dislike_count += 1
+
+                    elif serializer.validated_data["reaction_type"] == 3:
+                        comment.love_count += 1
+
+                    elif serializer.validated_data["reaction_type"] == 5:
+                        comment.angry_count += 1
+
+                elif reaction.reaction_type == 5:
+
+                    if comment.angry_count > 0:
+                        comment.angry_count -= 1
+
+                    if serializer.validated_data["reaction_type"] == 1:
+                        comment.like_count += 1
+
+                    elif serializer.validated_data["reaction_type"] == 2:
+                        comment.dislike_count += 1
+
+                    elif serializer.validated_data["reaction_type"] == 3:
+                        comment.love_count += 1
+
+                    elif serializer.validated_data["reaction_type"] == 4:
+                        comment.sad_count += 1
+
+            comment.save()
+            reaction.reaction_type = serializer.validated_data["reaction_type"]
+            reaction.save()
+
+        else:
+            if serializer.validated_data["reaction_type"] == 1:
+                comment.like_count += 1
+
+            elif serializer.validated_data["reaction_type"] == 2:
+                comment.dislike_count += 1
+
+            elif serializer.validated_data["reaction_type"] == 3:
+                comment.love_count += 1
+
+            elif serializer.validated_data["reaction_type"] == 4:
+                comment.sad_count += 1
+
+            elif serializer.validated_data["reaction_type"] == 5:
+                comment.angry_count += 1
+
+            comment.save()
+            instance = serializer.save()
+
+        context = {
+            "reaction": instance.to_dict() if not reaction else reaction.to_dict(),
+            "comment": comment.to_dict(),
+        }
+        return CustomResponse(
+            data=context, message="added reaction to comment succussfuly"
+        )
+
+    def delete(self, request: Request, post_id: int, comment_id: int):
+
+        comment = m.Comment.objects.filter(id=comment_id, user=request.user).first()
+
+        serializer = s.ReactionCommentSerializer(data=request.data)
+
+        if not comment:
+            raise NotFoundException("this comment does not exist")
+
+        if not serializer.is_valid():
+            raise BadRequestException(
+                message=serializer.error_messages, data=serializer.errors
+            )
+
+        reaction = m.CommentReaction.objects.filter(
+            comment=comment,
+            user=request.user,
+            reaction_type=serializer.validated_data["reaction_type"],
+        ).first()
+
+        if reaction is None:
+
+            raise BadRequestException("this reaction does not exist for this comment")
+
+        if serializer.validated_data["reaction_type"] == 1:
+            comment.like_count -= 1
+
+        elif serializer.validated_data["reaction_type"] == 2:
+            comment.dislike_count -= 1
+
+        elif serializer.validated_data["reaction_type"] == 3:
+            comment.love_count -= 1
+
+        elif serializer.validated_data["reaction_type"] == 4:
+            comment.sad_count -= 1
+
+        elif serializer.validated_data["reaction_type"] == 5:
+            comment.angry_count -= 1
+
+        reaction.delete()
+
+        comment.save()
+
+        return CustomResponse(message="removed reaction succussfully")
+
+
+class FriendsAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request):
+
+        friends_data = m.Friends.objects.filter(user=request.user).all()
+
+        friends = [friend.to_dict() for friend in friends_data]
+
+        context = {"friends": friends}
+
+        return CustomResponse(data=context, message="all user friends")
+
+    def post(self, request: Request):
+
+        serializer = s.UserSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            raise BadRequestException(
+                message=serializer.error_messages, data=serializer.errors
+            )
+
+        if request.user.id == serializer.validated_data["id"]:
+
+            raise BadRequestException("you cannot add  yourself as a friend")
+
+        instance = m.Friends(user=request.data, friend=serializer.validated_data["id"])
+
+        instance.save()
+
+        context = {"friend": instance.to_dict()}
+
+        return CustomResponse(data=context, message="added to friends successfully")
+
+
+class ReportPostAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Request):
+
+        serializer = s.ReportPostSerializer(
+            data=request.data, context={"user": request.user}
+        )
+
+        if not serializer.is_valid():
+            raise BadRequestException(
+                message=serializer.error_messages, data=serializer.errors
+            )
+
+        report = m.ReportPost.objects.filter(
+            post=serializer.validated_data["post"], user=request.user
+        ).exists()
+
+        if report:
+            raise BadRequestException(message="you can only report a post once")
+
+        serializer.save()
+
+        return CustomResponse(message="reported post")
+
+
+class PostListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request):
+
+        friends_posts = m.Post.objects.filter(user__user_friends__friend=request.user)
+
+        # additional posts from other users
+        # additional_posts = m.Post.objects.exclude(user=request.user).order_by(
+        #     "-created_at"
+        # )[:5]
+
+        post = friends_posts
+
+        context = {"post": post}
+
+        return CustomResponse(data=context, message="all post on user's feed")
+
+
+class StatusAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    parser_classes = (MultiPartParser,)
+
+    def get(self, request: Request):
+
+        status_data = [
+            status.to_dict()
+            for status in m.Status.objects.filter(user=request.user).all()
+        ]
+
+        context = {"status": status_data}
+
+        return CustomResponse(
+            data=context,
+            message="all created status",
+        )
+
+    def post(self, request: Request):
+
+        serializer = s.StatusSerializer(
+            data=request.data, context={"user": request.user}
+        )
+
+        if not serializer.is_valid():
+            raise BadRequestException(
+                message=serializer.error_messages, data=serializer.errors
+            )
+
+        instance = serializer.save()
+
+        context = {"status": instance.to_dict()}
+
+        return CustomResponse(
+            data=context,
+            message="created status successfully",
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class SingleStatusAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request, status_id: int):
+
+        status_data = m.Status.objects.filter(id=status_id).first()
+
+        if status_data is None:
+            raise NotFoundException("this status does not exist for this user")
+
+        context = {"status": status_data.to_dict()}
+
+        return CustomResponse(data=context, message="get single status")
+
+    def delete(self, request: Request, status_id: int):
+
+        status_data = m.Status.objects.filter(id=status_id, user=request.user).first()
+
+        if status_data is None:
+            raise NotFoundException("this status does not exist for this user")
+
+        status_data.delete()
+
+        return CustomResponse(
+            message="deleted status successfully",
+        )

@@ -1,3 +1,5 @@
+from typing import Iterable
+
 from django.contrib.auth import get_user_model
 from django.db import models
 from rest_framework import serializers
@@ -15,7 +17,7 @@ class PostFile(models.Model):
     file_type = models.CharField(max_length=100, null=True)
 
     def to_dict(self):
-        return {"file": self.file.url, "file_type": self.file_type}
+        return {"file_id": self.id, "file": self.file.url, "file_type": self.file_type}
 
 
 class CommentFile(models.Model):
@@ -24,7 +26,7 @@ class CommentFile(models.Model):
     file_type = models.CharField(max_length=100, null=True)
 
     def to_dict(self):
-        return {"file": self.file.url, "file_type": self.file_type}
+        return {"file_id": self.id, "file": self.file.url, "file_type": self.file_type}
 
 
 class Post(models.Model):
@@ -32,11 +34,9 @@ class Post(models.Model):
 
     text_content = models.TextField()
 
-    file = models.ForeignKey(
+    file = models.ManyToManyField(
         PostFile,
         blank=True,
-        null=True,
-        on_delete=models.SET_NULL,
         related_name="post_files",
     )
 
@@ -77,8 +77,9 @@ class Post(models.Model):
             "angry_count": self.angry_count,
         }
 
-    def get_file(self):
-        return self.file.to_dict() if self.file else None
+    def get_files(self):
+
+        return [file.to_dict() for file in self.file.all()]
 
     def to_dict(self):
 
@@ -101,7 +102,7 @@ class Post(models.Model):
         return {
             "id": self.id,
             "text_content": self.text_content,
-            "file": self.get_file(),
+            "files": self.get_files(),
             "location": self.location,
             "hashtags": hashtags_serializer.data,
             "tagged_users": tagged_user_serializer.data,
@@ -151,24 +152,26 @@ class Comment(models.Model):
             "angry_count": self.angry_count,
         }
 
+    def get_file(self):
+
+        return self.file.to_dict() if self.file else None
+
     def to_dict(self):
 
-        class CommentReactionSerializer(serializers.ModelSerializer):
+        class TaggedUserSerializer(serializers.ModelSerializer):
             class Meta:
-                model = CommentReaction
-                fields = ("reaction_type",)
+                model = User
+                fields = ("id", "username")
 
-        comment_reaction_serializer = CommentReactionSerializer(
-            self.reactions.all(), many=True
-        )
+        tagged_user = TaggedUserSerializer(self.user)
 
         return {
             "id": self.id,
             "post": self.post.id,
-            "user": self.user.id,
+            "user": dict(tagged_user.data),
             "text_content": self.text_content,
-            "file": str(self.file.id) if self.file else None,
-            "reaction": self.get_reactions(),
+            "file": self.get_file(),
+            "reactions": self.get_reactions(),
             "created_at": str(self.created_at),
         }
 
@@ -206,11 +209,11 @@ class PostReaction(models.Model):
 
 
 class CommentReaction(models.Model):
-    LIKE = "LIKE"
-    DISLIKE = "DISLIKE"
-    LOVE = "LOVE"
-    SAD = "SAD"
-    ANGRY = "ANGRY"
+    LIKE = 1
+    DISLIKE = 2
+    LOVE = 3
+    SAD = 4
+    ANGRY = 5
 
     REACTION_CHOICES = [
         (LIKE, "Like"),
@@ -221,9 +224,21 @@ class CommentReaction(models.Model):
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
-    reaction_type = models.CharField(max_length=10, choices=REACTION_CHOICES)
+    comment = models.ForeignKey(
+        Comment, on_delete=models.CASCADE, related_name="comment_reactions"
+    )
+    reaction_type = models.SmallIntegerField(choices=REACTION_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def to_dict(self):
+
+        return {
+            "reaction_id": self.id,
+            "comment": self.comment.id,
+            "user": self.user.id,
+            "reaction_type": self.reaction_type,
+            "created_at": str(self.created_at),
+        }
 
 
 class Reply(models.Model):
@@ -268,7 +283,7 @@ class SavedPost(models.Model):
         return {
             "id": self.id,
             "user": self.user.id,
-            "post": self.post.id,
+            "post": self.post.to_dict(),
             "created_at": str(self.created_at),
         }
 
@@ -278,3 +293,74 @@ class SharePost(models.Model):
     caption = models.TextField(blank=True, null=True)
     shared_post = models.ForeignKey("Post", on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class Status(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    caption = models.TextField()
+    file = models.FileField(upload_to="status_files/", blank=True)
+
+    tagged_users = models.ManyToManyField(
+        User, related_name="tagged_in_status", blank=True
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def to_dict(self):
+
+        class TaggedUserSerializer(serializers.ModelSerializer):
+            class Meta:
+                model = User
+                fields = ("id", "username")
+
+        tagged_user_serializer = TaggedUserSerializer(
+            self.tagged_users.all(), many=True
+        )
+
+        return {
+            "id": self.id,
+            "caption": self.caption,
+            "tagged_users": tagged_user_serializer.data,
+            "file": self.file.url,
+            "created_at": self.created_at,
+        }
+
+
+class Friends(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    friend = models.ForeignKey(
+        User, blank=True, on_delete=models.CASCADE, related_name="user_friends"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def to_dict(self):
+
+        return {"user": self.user.id, "friend": self.friend.id}
+
+
+class ReportPost(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    reason = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class BlockedUsers(models.Model):
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="blocked_users_set"
+    )
+    blocked_user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="blocked_by_set"
+    )
+    reason = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.blocker} blocked {self.blocked_user}"
+
+    def to_dict(self):
+
+        return {
+            "blocked_user": self.blocked_user.id,
+            "created_at": str(self.created_at),
+        }
