@@ -357,25 +357,6 @@ class AddFilePostAPIView(APIView):
 
         return CustomResponse(data=context, message="uploaded file to post ")
 
-    def delete(self, request: Request, post_id: int):
-
-        post = m.Post.objects.filter(id=post_id, user=request.user).first()
-
-        if not post:
-            raise NotFoundException("this post does not exist")
-
-        if not post.file:
-
-            raise BadRequestException("no file uploaded to this post")
-
-        file = post.file.filter(id=None)
-
-        # post.file = None
-        # post.save()
-
-        # context = {"post": post.to_dict()}
-        return CustomResponse(data=None, message="deleted file from post ")
-
 
 class SingleFilePostAPIView(APIView):
 
