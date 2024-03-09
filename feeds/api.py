@@ -10,8 +10,9 @@ from utils.response import CustomResponse
 
 from . import models as m
 from . import serializers as s
+from django.core.files.storage import default_storage
 
-# from .permissions impor] #IsBlockedPost
+from .permissions import IsBlockedPost
 
 
 class PostAPIView(APIView):
@@ -367,9 +368,42 @@ class AddFilePostAPIView(APIView):
 
             raise BadRequestException("no file uploaded to this post")
 
-        post.file.delete()
+        file = post.file.filter(id=None)
 
-        post.file = None
+        # post.file = None
+        # post.save()
+
+        # context = {"post": post.to_dict()}
+        return CustomResponse(data=None, message="deleted file from post ")
+
+
+class SingleFilePostAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request: Request, post_id: int, file_id: int):
+
+        post = m.Post.objects.filter(id=post_id, user=request.user).first()
+
+        if not post:
+            raise NotFoundException("this post does not exist")
+
+        if not post.file:
+
+            raise BadRequestException("no file uploaded to this post")
+
+        file_instance: m.PostFile = post.file.filter(id=file_id).first()
+
+        if not file_instance:
+            raise NotFoundException("this file does not exist for this post")
+
+        if file_instance.file:
+            file_path = file_instance.file.path
+
+            default_storage.delete(file_path)
+
+        file_instance.delete()
+
         post.save()
 
         context = {"post": post.to_dict()}
@@ -398,20 +432,15 @@ class CommentPostAPIView(APIView):
 
         if not post:
             raise NotFoundException("this post does not exist")
-        
 
         serializer = s.CommentSerializer(
             data=request.data, context={"post": post, "user": request.user}
         )
 
-
         if not serializer.is_valid():
             raise BadRequestException(
                 message=serializer.error_messages, data=serializer.errors
-        )
-
-
-
+            )
 
         file_instance = None
 
@@ -425,21 +454,12 @@ class CommentPostAPIView(APIView):
                 },
             )
 
-        
-        
-
-
         if not file_serializer.is_valid():
             raise BadRequestException(
                 message=file_serializer.error_messages, data=file_serializer.errors
             )
-        
 
         file_instance = file_serializer.save()
-
-        
-
-        
 
         instance = serializer.save()
 
@@ -464,7 +484,6 @@ class SingleCommentAPIView(APIView):
 
         if not comment_data:
             raise NotFoundException("this comment does not exist")
-        
 
         file_instance = None
 
@@ -482,7 +501,6 @@ class SingleCommentAPIView(APIView):
                 raise BadRequestException(
                     message=file_serializer.error_messages, data=file_serializer.errors
                 )
-            
 
             file_instance = file_serializer.save()
 
@@ -497,7 +515,6 @@ class SingleCommentAPIView(APIView):
             )
 
         comment_data.text_content = serializer.validated_data["text_content"]
-        
 
         if file_instance:
             comment_data.file = file_instance

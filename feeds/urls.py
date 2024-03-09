@@ -31,6 +31,12 @@ urlpatterns = [
         api.AddFilePostAPIView.as_view(),
         name="add_file_on_post",
     ),
+
+    path(
+        "post/<int:post_id>/file/<int:file_id>/",
+        api.SingleFilePostAPIView.as_view(),
+        name="single_file_on_post",
+    ),
     
     path("post/save/", api.SavedPostAPIView.as_view(), name="saved_post"),
     path("post/<int:post_id>/save/", api.SavePostAPIView.as_view(), name="save_post"),

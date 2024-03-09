@@ -17,7 +17,7 @@ class PostFile(models.Model):
     file_type = models.CharField(max_length=100, null=True)
 
     def to_dict(self):
-        return {"file": self.file.url, "file_type": self.file_type}
+        return {"file_id": self.id, "file": self.file.url, "file_type": self.file_type}
 
 
 class CommentFile(models.Model):
@@ -151,12 +151,10 @@ class Comment(models.Model):
             "sad_count": self.sad_count,
             "angry_count": self.angry_count,
         }
-    
 
     def get_file(self):
 
         return self.file.to_dict() if self.file else None
-
 
     def to_dict(self):
 
@@ -173,7 +171,6 @@ class Comment(models.Model):
             class Meta:
                 model = User
                 fields = ("id", "username")
-
 
         tagged_user = TaggedUserSerializer(self.user)
 
@@ -324,9 +321,6 @@ class Status(models.Model):
             "file": self.file.url,
             "created_at": self.created_at,
         }
-    
-    
-
 
 
 class Friends(models.Model):
