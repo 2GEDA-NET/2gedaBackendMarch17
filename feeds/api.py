@@ -1,3 +1,4 @@
+from django.core.files.storage import default_storage
 from rest_framework import status
 from rest_framework.exceptions import APIException
 from rest_framework.parsers import MultiPartParser
@@ -10,8 +11,6 @@ from utils.response import CustomResponse
 
 from . import models as m
 from . import serializers as s
-from django.core.files.storage import default_storage
-
 from .permissions import IsBlockedPost
 
 
@@ -495,8 +494,6 @@ class SingleCommentAPIView(APIView):
                 comment_data.file = None
 
             file_instance = file_serializer.save()
-        
-            
 
         comment_data.text_content = serializer.validated_data["text_content"]
 
@@ -507,8 +504,6 @@ class SingleCommentAPIView(APIView):
         context = {"comment": comment_data.to_dict()}
 
         return CustomResponse(data=context, message="updated comment on post")
-    
-
 
     def delete(self, request: Request, post_id: int, comment_id: int):
 
@@ -516,36 +511,30 @@ class SingleCommentAPIView(APIView):
             id=comment_id, post=post_id, user=request.user
         ).first()
 
-
         if not comment_data:
             raise NotFoundException("this comment does not exist")
-        
 
         if comment_data.file:
-                comment_file_instance = comment_data.file
+            comment_file_instance = comment_data.file
 
-                file_path = comment_data.file.file.path
+            file_path = comment_data.file.file.path
 
-                default_storage.delete(file_path)
+            default_storage.delete(file_path)
 
-                comment_file_instance.delete()
+            comment_file_instance.delete()
 
-                comment_data.file = None
+            comment_data.file = None
 
         comment_data.delete()
 
-
         return CustomResponse(message="deleted comment on post")
-    
-        
-
 
 
 class ReactionCommentView(APIView):
 
     permission_classes = [IsAuthenticated, IsBlockedPost]
 
-    def get(self, request: Request, post_id: int, comment_id:int):
+    def get(self, request: Request, post_id: int, comment_id: int):
 
         comment = m.Comment.objects.filter(id=comment_id, post=post_id).first()
 
@@ -559,7 +548,7 @@ class ReactionCommentView(APIView):
 
         return CustomResponse(data=context, message="all reactions on this comment")
 
-    def post(self, request: Request, post_id: int, comment_id:int):
+    def post(self, request: Request, post_id: int, comment_id: int):
 
         comment = m.Comment.objects.filter(id=comment_id, post=post_id).first()
 
@@ -575,7 +564,9 @@ class ReactionCommentView(APIView):
                 message=serializer.error_messages, data=serializer.errors
             )
 
-        reaction = m.CommentReaction.objects.filter(comment=comment, user=request.user).first()
+        reaction = m.CommentReaction.objects.filter(
+            comment=comment, user=request.user
+        ).first()
 
         if reaction:
 
@@ -694,11 +685,11 @@ class ReactionCommentView(APIView):
             "reaction": instance.to_dict() if not reaction else reaction.to_dict(),
             "comment": comment.to_dict(),
         }
-        return CustomResponse(data=context, message="added reaction to comment succussfuly")
-    
+        return CustomResponse(
+            data=context, message="added reaction to comment succussfuly"
+        )
 
-
-    def delete(self, request: Request, post_id:int, comment_id: int):
+    def delete(self, request: Request, post_id: int, comment_id: int):
 
         comment = m.Comment.objects.filter(id=comment_id, user=request.user).first()
 
@@ -715,7 +706,7 @@ class ReactionCommentView(APIView):
         reaction = m.CommentReaction.objects.filter(
             comment=comment,
             user=request.user,
-            reaction_type=serializer.validated_data["reaction_type"]
+            reaction_type=serializer.validated_data["reaction_type"],
         ).first()
 
         if reaction is None:
@@ -742,14 +733,6 @@ class ReactionCommentView(APIView):
         comment.save()
 
         return CustomResponse(message="removed reaction succussfully")
-
-
-
-
-    
-
-
-
 
 
 class FriendsAPIView(APIView):

@@ -141,7 +141,6 @@ class ReactionPostSerializer(serializers.ModelSerializer):
         return instance
 
 
-
 class ReactionCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = m.CommentReaction
@@ -153,11 +152,11 @@ class ReactionCommentSerializer(serializers.ModelSerializer):
 
         user = self.context["user"]
 
-        instance = m.CommentReaction.objects.create(user=user, comment=comment, **validated_data)
+        instance = m.CommentReaction.objects.create(
+            user=user, comment=comment, **validated_data
+        )
 
         return instance
-
-
 
 
 class UserSerializer(serializers.ModelSerializer):

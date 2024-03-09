@@ -26,7 +26,7 @@ class CommentFile(models.Model):
     file_type = models.CharField(max_length=100, null=True)
 
     def to_dict(self):
-        return {"file_id":self.id, "file": self.file.url, "file_type": self.file_type}
+        return {"file_id": self.id, "file": self.file.url, "file_type": self.file_type}
 
 
 class Post(models.Model):
@@ -224,9 +224,21 @@ class CommentReaction(models.Model):
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name="comment_reactions")
+    comment = models.ForeignKey(
+        Comment, on_delete=models.CASCADE, related_name="comment_reactions"
+    )
     reaction_type = models.SmallIntegerField(choices=REACTION_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def to_dict(self):
+
+        return {
+            "reaction_id": self.id,
+            "comment": self.comment.id,
+            "user": self.user.id,
+            "reaction_type": self.reaction_type,
+            "created_at": str(self.created_at),
+        }
 
 
     def to_dict(self):
@@ -342,10 +354,6 @@ class ReportPost(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     reason = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
-
-
-
-
 
 
 class BlockedUsers(models.Model):

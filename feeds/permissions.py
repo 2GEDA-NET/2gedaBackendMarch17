@@ -1,9 +1,9 @@
 from rest_framework import permissions
 
 from feeds.models import Post
+from utils.exception import BadRequestException, NotFoundException
 
 from .models import BlockedUsers
-from utils.exception import BadRequestException, NotFoundException
 
 
 class IsBlockedPost(permissions.BasePermission):

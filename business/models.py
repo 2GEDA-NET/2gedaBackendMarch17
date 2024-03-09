@@ -6,6 +6,8 @@ from account.models import UserProfile
 
 User = get_user_model()
 
+BUSINESS_TYPES = [("personal", "personal"), ("company", "company")]
+
 
 class BusinessCategory(models.Model):
 
@@ -31,6 +33,9 @@ class BusinessAccount(models.Model):
 
     business_image = models.ImageField(
         _("Business Image"), upload_to="business-images/", blank=True, null=True
+    )
+    business_type = models.CharField(
+        _("Business Type"), max_length=50, choices=BUSINESS_TYPES, blank=True, null=True
     )
     cover_image = models.ImageField(
         _("Cover Image"), upload_to="cover-images/", blank=True, null=True
