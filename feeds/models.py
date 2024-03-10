@@ -241,34 +241,47 @@ class CommentReaction(models.Model):
         }
 
 
-    def to_dict(self):
-
-        return {
-            "reaction_id": self.id,
-            "comment": self.comment.id,
-            "user": self.user.id,
-            "reaction_type": self.reaction_type,
-            "created_at": str(self.created_at),
-        }
-
-
 class Reply(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
     text_content = models.TextField()
-
-    reactions = models.ManyToManyField(
-        User, through="ReplyReaction", related_name="reply_reactions"
-    )
+    reactions = models.ManyToManyField("ReplyReaction", related_name="reply_reactions")
     created_at = models.DateTimeField(auto_now_add=True)
+
+    like_count = models.PositiveIntegerField(default=0)
+    dislike_count = models.PositiveIntegerField(default=0)
+    love_count = models.PositiveIntegerField(default=0)
+    sad_count = models.PositiveIntegerField(default=0)
+    angry_count = models.PositiveIntegerField(default=0)
+
+    def get_reactions(self):
+
+        return {
+            "like_count": self.like_count,
+            "dislike_count": self.dislike_count,
+            "love_count": self.love_count,
+            "sad_count": self.sad_count,
+            "angry_count": self.angry_count,
+        }
+
+    def to_dict(self):
+
+        return {
+            "id": self.id,
+            "comment": self.comment.id,
+            "user": self.user.id,
+            "text_content": self.text_content,
+            "reactions": self.get_reactions(),
+            "created_at": str(self.created_at),
+        }
 
 
 class ReplyReaction(models.Model):
-    LIKE = "LIKE"
-    DISLIKE = "DISLIKE"
-    LOVE = "LOVE"
-    SAD = "SAD"
-    ANGRY = "ANGRY"
+    LIKE = 1
+    DISLIKE = 2
+    LOVE = 3
+    SAD = 4
+    ANGRY = 5
 
     REACTION_CHOICES = [
         (LIKE, "Like"),
@@ -279,9 +292,20 @@ class ReplyReaction(models.Model):
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    reply = models.ForeignKey(Reply, on_delete=models.CASCADE)
-    reaction_type = models.CharField(max_length=10, choices=REACTION_CHOICES)
+    reply = models.ForeignKey(
+        Reply, on_delete=models.CASCADE, related_name="reply_reactions"
+    )
+    reaction_type = models.SmallIntegerField(choices=REACTION_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def to_dict(self):
+        return {
+            "reaction_id": self.id,
+            "reply": self.reply.id,
+            "user": self.user.id,
+            "reaction_type": self.reaction_type,
+            "created_at": str(self.created_at),
+        }
 
 
 class SavedPost(models.Model):

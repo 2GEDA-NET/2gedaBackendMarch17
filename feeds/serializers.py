@@ -113,13 +113,14 @@ class CommentSerializer(serializers.ModelSerializer):
 
         post.comments.add(comment_instance)
 
-        comment_file_instance = m.CommentFile.objects.create(
-            comment=comment_instance, file=file, file_type=file.content_type
-        )
+        if file:
+            comment_file_instance = m.CommentFile.objects.create(
+                comment=comment_instance, file=file, file_type=file.content_type
+            )
 
-        comment_instance.file = comment_file_instance
+            comment_instance.file = comment_file_instance
 
-        comment_instance.save()
+            comment_instance.save()
 
         return comment_instance
 
@@ -158,6 +159,23 @@ class ReactionCommentSerializer(serializers.ModelSerializer):
 
         return instance
 
+
+class ReactionReplySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = m.ReplyReaction
+        fields = ("reaction_type",)
+
+    def create(self, validated_data):
+
+        reply = self.context["reply"]
+
+        user = self.context["user"]
+
+        instance = m.ReplyReaction.objects.create(
+            user=user, reply=reply, **validated_data
+        )
+
+        return instance
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -227,3 +245,26 @@ class StatusSerializer(serializers.ModelSerializer):
             )
 
         return instance
+
+
+
+class ReplyCommentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = m.Reply
+        fields = ("text_content", )
+
+
+    def create(self, validated_data):
+
+        comment: m.Comment = self.context["comment"]
+
+        user = self.context["user"]
+
+        reply_instance = m.Reply.objects.create(comment=comment, user=user, **validated_data)
+
+        reply_instance.save()
+
+        return reply_instance
+
+    

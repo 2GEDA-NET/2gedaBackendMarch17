@@ -21,8 +21,28 @@ urlpatterns = [
     path(
         "post/<int:post_id>/comments/<int:comment_id>/reactions/",
         api.ReactionCommentView.as_view(),
-        name="comment-single-reaction",
+        name="reaction_on_comment",
     ),
+
+
+    path(
+        "post/<int:post_id>/comments/<int:comment_id>/replies/",
+        api.ReplyCommentView.as_view(),
+        name="replies_on_comment",
+    ),
+
+    path(
+        "post/<int:post_id>/comments/<int:comment_id>/replies/<int:reply_id>/",
+        api.SingleReplyView.as_view(),
+        name="reaction-single",
+    ),
+
+    path(
+        "post/<int:post_id>/comments/<int:comment_id>/replies/<int:reply_id>/reactions/",
+        api.SingleReplyReactionView.as_view(),
+        name="reaction_on_reply",
+    ),
+
     path(
         "post/<int:post_id>/reactions/",
         api.ReactionPostView.as_view(),
