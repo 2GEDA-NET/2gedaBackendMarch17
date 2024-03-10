@@ -6,6 +6,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
+from django.db.models import F, Sum
+
 from utils.exception import BadRequestException, NotFoundException
 from utils.response import CustomResponse
 
@@ -25,7 +27,15 @@ class PostAPIView(APIView):
 
             param = request.query_params.get("filter")
 
-            if param not in ["image", "video", "audio", "file", "other", "location", "all"]:
+            if param not in [
+                "image",
+                "video",
+                "audio",
+                "file",
+                "other",
+                "location",
+                "all",
+            ]:
                 raise BadRequestException("invalid query params for filter")
 
             if param == "image":
@@ -57,14 +67,12 @@ class PostAPIView(APIView):
 
                 serialized_posts = [post.to_dict() for post in filtered_posts]
 
-
             elif param == "location":
                 filtered_posts = m.Post.objects.filter(
                     user=request.user, location__isnull=False
                 )
 
                 serialized_posts = [post.to_dict() for post in filtered_posts]
-
 
             elif param == "other":
                 filtered_posts = m.Post.objects.filter(
@@ -955,9 +963,19 @@ class ReplyCommentView(APIView):
 
     def get(self, request: Request, post_id: int, comment_id: int):
 
-        reply_data = m.Reply.objects.filter(comment=comment_id).all()
+        replies_with_engagements = m.Reply.objects.filter(comment=comment_id).annotate(
+            total_engagements=Sum(
+                F("like_count")
+                + F("dislike_count")
+                + F("sad_count")
+                + F("angry_count")
+                + F("love_count")
+            ),
+        )
 
-        replies = [reply.to_dict() for reply in reply_data]
+        ordered_replies = replies_with_engagements.order_by("-total_engagements")
+
+        replies = [reply.to_dict() for reply in ordered_replies]
 
         context = {"replies": replies}
 
