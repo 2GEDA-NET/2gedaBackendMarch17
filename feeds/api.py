@@ -11,6 +11,7 @@ from utils.response import CustomResponse
 
 from . import models as m
 from . import serializers as s
+from . import mime_types as mime
 from .permissions import IsBlockedPost
 
 
@@ -19,6 +20,57 @@ class PostAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request: Request):
+
+        if request.query_params.get("filter"):
+
+            param = request.query_params.get("filter")
+
+            if param not in ["image", "video", "audio", "file", "other", "all"]:
+                raise BadRequestException("invalid query params for filter")
+
+            if param == "image":
+                filtered_posts = m.Post.objects.filter(
+                    user=request.user, file__file_type__in=mime.image_types
+                )
+
+                serialized_posts = [post.to_dict() for post in filtered_posts]
+
+            elif param == "video":
+
+                filtered_posts = m.Post.objects.filter(
+                    user=request.user, file__file_type__in=mime.video_types
+                )
+
+                serialized_posts = [post.to_dict() for post in filtered_posts]
+
+            elif param == "audio":
+
+                filtered_posts = m.Post.objects.filter(
+                    user=request.user, file__file_type__in=mime.audio_types
+                )
+
+            elif param == "file":
+
+                filtered_posts = m.Post.objects.filter(
+                    user=request.user, file__file_type__in=mime.document_types
+                )
+
+                serialized_posts = [post.to_dict() for post in filtered_posts]
+
+            elif param == "other":
+                filtered_posts = m.Post.objects.filter(
+                    user=request.user, file__file_type__in=mime.other_types
+                )
+
+                serialized_posts = [post.to_dict() for post in filtered_posts]
+
+            elif param == "all":
+
+                filtered_posts = m.Post.objects.filter(user=request.user).all()
+
+                serialized_posts = [post.to_dict() for post in filtered_posts]
+
+            return CustomResponse(data=serialized_posts, message="get user's posts")
 
         post_data = m.Post.objects.filter(user=request.user).all()
 
@@ -689,9 +741,6 @@ class ReactionCommentView(APIView):
             data=context, message="added reaction to comment succussfuly"
         )
 
-
-
-
     def delete(self, request: Request, post_id: int, comment_id: int):
 
         comment = m.Comment.objects.filter(id=comment_id, user=request.user).first()
@@ -895,8 +944,7 @@ class ReplyCommentView(APIView):
 
     permission_classes = [IsAuthenticated, IsBlockedPost]
 
-
-    def get(self, request: Request, post_id: int, comment_id:int):
+    def get(self, request: Request, post_id: int, comment_id: int):
 
         reply_data = m.Reply.objects.filter(comment=comment_id).all()
 
@@ -906,7 +954,6 @@ class ReplyCommentView(APIView):
 
         return CustomResponse(data=context, message="get replies for comments")
 
-
     def post(self, request: Request, post_id: int, comment_id: int):
 
         comment = m.Comment.objects.filter(id=comment_id, post=post_id).first()
@@ -914,9 +961,9 @@ class ReplyCommentView(APIView):
         if not comment:
             raise NotFoundException("this comment does not exist")
 
-
-        serializer = s.ReplyCommentSerializer(data=request.data, context={"user":request.user, "comment": comment})
-
+        serializer = s.ReplyCommentSerializer(
+            data=request.data, context={"user": request.user, "comment": comment}
+        )
 
         if not serializer.is_valid():
             raise BadRequestException(
@@ -926,20 +973,18 @@ class ReplyCommentView(APIView):
         instance = serializer.save()
 
         context = {"reply": instance.to_dict()}
-        
 
-        return CustomResponse(data=context, message="added reply successfully",)
-
-
-
-
+        return CustomResponse(
+            data=context,
+            message="added reply successfully",
+        )
 
 
 class SingleReplyView(APIView):
 
     permission_classes = [IsAuthenticated, IsBlockedPost]
 
-    def patch(self, request: Request, post_id: int, comment_id: int, reply_id:int):
+    def patch(self, request: Request, post_id: int, comment_id: int, reply_id: int):
 
         reply_data = m.Reply.objects.filter(
             id=reply_id, comment=comment_id, user=request.user
@@ -948,13 +993,12 @@ class SingleReplyView(APIView):
         if not reply_data:
             raise NotFoundException("this reply does not exist")
 
-
         serializer = s.ReplyCommentSerializer(data=request.data)
         if not serializer.is_valid():
             raise BadRequestException(
                 message=serializer.error_messages, data=serializer.errors
             )
-        
+
         reply_data.text_content = serializer.validated_data["text_content"]
 
         reply_data.save()
@@ -963,7 +1007,7 @@ class SingleReplyView(APIView):
 
         return CustomResponse(data=context, message="updated reply on comment")
 
-    def delete(self, request: Request, post_id: int, comment_id: int, reply_id:int):
+    def delete(self, request: Request, post_id: int, comment_id: int, reply_id: int):
 
         reply_data = m.Reply.objects.filter(
             id=reply_id, comment=comment_id, user=request.user
@@ -972,26 +1016,20 @@ class SingleReplyView(APIView):
         if not reply_data:
             raise NotFoundException("this reply does not exist on this comment")
 
-
         reply_data.delete()
 
         return CustomResponse(message="deleted reply on comment")
-    
-
-
-
 
 
 class SingleReplyReactionView(APIView):
 
     permission_classes = [IsAuthenticated, IsBlockedPost]
 
-    def get(self, request: Request, post_id: int, comment_id: int, reply_id:int):
+    def get(self, request: Request, post_id: int, comment_id: int, reply_id: int):
 
         reply = m.Reply.objects.filter(
             id=reply_id, comment=comment_id, user=request.user
         ).first()
-
 
         if not reply:
             raise NotFoundException("this comment does not exist")
@@ -1003,12 +1041,11 @@ class SingleReplyReactionView(APIView):
 
         return CustomResponse(data=context, message="all reactions on this reply")
 
-    def post(self, request: Request, post_id: int, comment_id: int, reply_id:int):
+    def post(self, request: Request, post_id: int, comment_id: int, reply_id: int):
 
         reply = m.Reply.objects.filter(
             id=reply_id, comment=comment_id, user=request.user
         ).first()
-
 
         if not reply:
             raise NotFoundException("this reply does not exist")
@@ -1147,16 +1184,11 @@ class SingleReplyReactionView(APIView):
             data=context, message="added reaction to reply succussfuly"
         )
 
-
-
-
-
-    def delete(self, request: Request, post_id: int, comment_id: int, reply_id:int):
+    def delete(self, request: Request, post_id: int, comment_id: int, reply_id: int):
 
         reply = m.Reply.objects.filter(
             id=reply_id, comment=comment_id, user=request.user
         ).first()
-
 
         serializer = s.ReactionReplySerializer(data=request.data)
 
