@@ -25,7 +25,7 @@ class PostAPIView(APIView):
 
             param = request.query_params.get("filter")
 
-            if param not in ["image", "video", "audio", "file", "other", "all"]:
+            if param not in ["image", "video", "audio", "file", "other", "location", "all"]:
                 raise BadRequestException("invalid query params for filter")
 
             if param == "image":
@@ -56,6 +56,15 @@ class PostAPIView(APIView):
                 )
 
                 serialized_posts = [post.to_dict() for post in filtered_posts]
+
+
+            elif param == "location":
+                filtered_posts = m.Post.objects.filter(
+                    user=request.user, location__isnull=False
+                )
+
+                serialized_posts = [post.to_dict() for post in filtered_posts]
+
 
             elif param == "other":
                 filtered_posts = m.Post.objects.filter(
