@@ -32,7 +32,7 @@ class CommentFile(models.Model):
 class Post(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
-    text_content = models.TextField()
+    text_content = models.TextField(null=True)
 
     file = models.ManyToManyField(
         PostFile,
@@ -80,6 +80,10 @@ class Post(models.Model):
     def get_files(self):
 
         return [file.to_dict() for file in self.file.all()]
+    
+    def get_repost(self):
+
+        return self.repost.to_dict() if self.repost else None
 
     def to_dict(self):
 
@@ -110,7 +114,7 @@ class Post(models.Model):
             "is_business_post": self.is_business_post,
             "is_personal_post": self.is_business_post,
             "is_repost": self.is_repost,
-            "repost": str(self.repost.id) if self.repost else None,
+            "repost": self.get_repost(),
             "created_at": str(self.created_at),
         }
 
@@ -399,3 +403,6 @@ class BlockedUsers(models.Model):
             "blocked_user": self.blocked_user.id,
             "created_at": str(self.created_at),
         }
+
+
+

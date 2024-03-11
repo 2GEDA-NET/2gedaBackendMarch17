@@ -1257,3 +1257,35 @@ class SingleReplyReactionView(APIView):
         reply.save()
 
         return CustomResponse(message="removed reaction succussfully")
+
+
+class RepostView(APIView):
+
+    permission_classes = [IsAuthenticated, IsBlockedPost]
+
+    def post(self, request: Request, post_id: int):
+
+        post = m.Post.objects.filter(id=post_id).first()
+
+        if post is None:
+            raise NotFoundException("this post does not exist")
+
+        serializer = s.RepostSerializer(
+            data=request.data,
+            context={
+                "user": request.user,
+                "post": post,
+                "text_content": request.data.get("text_content"),
+            },
+        )
+
+        if not serializer.is_valid():
+            raise BadRequestException(
+                message=serializer.error_messages, data=serializer.errors
+            )
+
+        instance = serializer.save()
+
+        context = {"post": instance.to_dict()}
+
+        return CustomResponse(data=context, message="created repost succussfuly")

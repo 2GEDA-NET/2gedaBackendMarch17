@@ -177,6 +177,7 @@ class ReactionReplySerializer(serializers.ModelSerializer):
 
         return instance
 
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = m.User
@@ -247,13 +248,11 @@ class StatusSerializer(serializers.ModelSerializer):
         return instance
 
 
-
 class ReplyCommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = m.Reply
-        fields = ("text_content", )
-
+        fields = ("text_content",)
 
     def create(self, validated_data):
 
@@ -261,10 +260,64 @@ class ReplyCommentSerializer(serializers.ModelSerializer):
 
         user = self.context["user"]
 
-        reply_instance = m.Reply.objects.create(comment=comment, user=user, **validated_data)
+        reply_instance = m.Reply.objects.create(
+            comment=comment, user=user, **validated_data
+        )
 
         reply_instance.save()
 
         return reply_instance
 
-    
+
+class RepostSerializer(serializers.Serializer):
+    hashtags = serializers.ListSerializer(child=serializers.CharField(), required=False)
+    tagged_users = serializers.ListField(required=False)
+
+    class Meta:
+        model = m.Post
+        fields = (
+            "text_content",
+            "location",
+            "hashtags",
+            "is_business_post",
+            "is_personal_post",
+            "tagged_users",
+        )
+
+    def create(self, validated_data):
+
+        user = self.context["user"]
+
+        post = self.context["post"]
+
+        text_content = self.context["text_content"]
+
+        if type(text_content) != str:
+            raise BadRequestException("text content must be a string.")
+
+        tagged_users_data = validated_data.pop("tagged_users", [])
+
+        hashtags_data = validated_data.pop("hashtags", [])
+
+        new_hashtags = [
+            m.Hashtag.objects.get_or_create(name=name)[0].id for name in hashtags_data
+        ]
+
+        try:
+            instance = m.Post.objects.create(
+                user=user,
+                is_repost=True,
+                text_content=text_content,
+                repost=post,
+                **validated_data
+            )
+            instance.tagged_users.set(tagged_users_data)
+            instance.hashtags.set(new_hashtags)
+
+        except IntegrityError as e:
+
+            raise BadRequestException(
+                "One or more user IDs in the tagged users do not exist"
+            )
+
+        return instance

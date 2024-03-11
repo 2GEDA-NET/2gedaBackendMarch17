@@ -49,6 +49,13 @@ urlpatterns = [
         name="reaction_on_post",
     ),
 
+
+    path(
+        "post/<int:post_id>/repost/",
+        api.RepostView.as_view(),
+        name="repost_on_post",
+    ),
+
     path(
         "post/<int:post_id>/file/",
         api.AddFilePostAPIView.as_view(),
