@@ -123,3 +123,28 @@ class UserProfileVideoMediaAPI(
 
     def get_queryset(self):
         return m.UserProfileMedia.objects.filter(media_type="video")
+
+
+class UserRewardAPI(renderers.ReadOnlyModelRenderer, viewsets.GenericViewSet):
+    serializer_class = s.UserRewardSerializer
+    lookup_url_kwarg = "reward_id"
+
+    def get_queryset(self):
+        return m.UserReward.objects.filter(profile=self.request.user.profile)
+
+    @decorators.action(methods=["GET"], detail=True, url_path="claim")
+    def claim_reward(self, request, *args, **kwargs):
+        # data = self.serializer_class(self.get_queryset()).data
+        # TODO
+        return Response(
+            {"message": "Success", "status": True, "data": "data"},
+            status=status.HTTP_200_OK,
+        )
+
+
+class UserPhoneAPI(renderers.CrudModelRenderer, viewsets.GenericViewSet):
+    serializer_class = s.UserPhoneSerializer
+    lookup_url_kwarg = "phone_id"
+
+    def get_queryset(self):
+        return m.UserReward.objects.filter(profile=self.request.user.profile)

@@ -1,4 +1,4 @@
-from rest_framework import status, viewsets
+from rest_framework import decorators, status, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
@@ -6,22 +6,21 @@ from utils import renderers
 
 from . import models as m
 from . import serializers as s
-from .permissions import IsBusinessOwnerProfile
+from .permissions import IsBusinessAccount
 
 
 class BusinessAccountAPI(renderers.ListCreateModelRenderer, viewsets.GenericViewSet):
 
-    serializer_class = s.BusinessAccountSerializer
-
     def get_queryset(self):
-        return m.BusinessAccount.objects.filter(user=self.request.user)
+        return m.BusinessAccount.objects.filter(profile=self.request.user.profile)
 
-    def get_permissions(self):
-        if self.action == "create":
-            permissions = [AllowAny]
-        else:
-            permissions = [IsAuthenticated]
-        return [permission() for permission in permissions]
+    def get_serializer_class(self):
+        if self.action == "verify":
+            return s.BusinessVerificationSerializer
+        return s.BusinessAccountSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(profile=self.request.user.profile)
 
     def create(self, request, *args, **kwargs):
         # Example of `availability` request data: Must time obj serializable ["10:12:53"]
@@ -58,20 +57,18 @@ class BusinessAccountAPI(renderers.ListCreateModelRenderer, viewsets.GenericView
             }
         }
         ```
+        **category** --> ```personal``` | ```company```
         """
         data = super().create(request, *args, **kwargs).data
         data["message"] = "Business account created successfully!"
         return Response(data, status=status.HTTP_201_CREATED)
 
-
-class BusinessCategoryAPI(
-    renderers.ListRetrieveCreateModelRenderer, viewsets.GenericViewSet
-):
-    queryset = m.BusinessCategory.objects.all()
-    serializer_class = s.BusinessCategorySerializer
-    lookup_url_kwarg = "category_id"
-
-
-class BusinessOwnerProfileAPI(renderers.CreateModelRenderer, viewsets.GenericViewSet):
-    queryset = m.BusinessOwnerProfile.objects.all()
-    serializer_class = s.BusinessOwnerProfileSerializer
+    @decorators.action(methods=["POST"], detail=False, url_path="verify")
+    def verify(self, request, *args, **kwargs):
+        serializer = self.get_serializer_class()(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(
+            {"message": "Success", "status": True, "data": serializer.data},
+            status=status.HTTP_201_CREATED,
+        )

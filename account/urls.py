@@ -14,5 +14,7 @@ router.register("profile/media/files", api.UserProfileFileMediaAPI, basename="fi
 router.register(
     "profile/media/voice-notes", api.UserProfileVoiceNoteMediaAPI, basename="voice_note"
 )
+router.register("profile/rewards", api.UserRewardAPI, basename="reward")
+router.register("profile/phones", api.UserPhoneAPI, basename="phone")
 
 urlpatterns = [path("", include(router.urls))]

@@ -88,3 +88,15 @@ class UserProfileMediaSerializer(serializers.ModelSerializer):
         model = m.UserProfileMedia
         fields = "__all__"
         read_only_fields = ["profile"]
+
+
+class UserRewardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = m.UserReward
+        fields = "__all__"
+
+
+class UserPhoneSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = m.UserPhone
+        fields = "__all__"

@@ -15,7 +15,6 @@ class UserSerializer(serializers.ModelSerializer):
             "id",
             "username",
             "email",
-            "phone_number",
             "is_verified",
             "password",
         )
@@ -30,22 +29,19 @@ class ReadOnlyUserSerializer(serializers.Serializer):
     first_name = serializers.CharField(read_only=True)
     last_name = serializers.CharField(read_only=True)
     email = serializers.EmailField(required=True)
-    phone_number = serializers.CharField(read_only=True)
     is_verified = serializers.BooleanField(read_only=True)
 
 
 class UserRegisterOnlySerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
     username = serializers.CharField(required=True)
-    phone_number = serializers.CharField(required=False)
     password = serializers.CharField(required=True, write_only=True)
 
     def validate(self, attrs):
         email = attrs.get("email", "")
         username = attrs.get("username", "")
-        phone_number = attrs.get("phone_number", "")
         user = User.objects.filter(
-            Q(email=email) | Q(username=username) | Q(phone_number=phone_number)
+            Q(email=email) | Q(username=username) | Q(username=username)
         )
         if user.exists():
             raise serializers.ValidationError("User already exist!")
