@@ -1,16 +1,14 @@
 from rest_framework.permissions import BasePermission
 
 
-class IsBusinessOwnerProfile(BasePermission):
+class IsBusinessAccount(BasePermission):
     """Permission for user profile to be a business owner"""
 
-    message = "This user profile is not business owner verified!"
+    message = "Unauthorized! Must have a business account!"
 
     def has_permission(self, request, view):
         try:
-            permission = request.user.is_verified and hasattr(
-                request.user.profile, "business_owner"
-            )
+            permission = request.user.is_business
         except AttributeError:
             # user is anonymous user
             return False

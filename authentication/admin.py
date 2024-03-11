@@ -10,7 +10,6 @@ class UsersAdmin(admin.ModelAdmin):
         "username",
         "first_name",
         "last_name",
-        "phone_number",
         "is_business",
         "is_personal",
         "is_admin",
@@ -20,11 +19,10 @@ class UsersAdmin(admin.ModelAdmin):
         "email",
         "password",
         "username",
-        "phone_number",
         "last_login",
         "date_joined",
     )
-    search_fields = ("email", "phone_number")
+    search_fields = ("email",)
     list_editable = [
         "is_business",
         "is_personal",
@@ -35,7 +33,7 @@ class UsersAdmin(admin.ModelAdmin):
     fieldsets = (
         (
             "Authentication",
-            {"fields": ("email", "username", "phone_number")},
+            {"fields": ("email", "username")},
         ),
         (
             "Personal Information",
@@ -49,7 +47,7 @@ class UsersAdmin(admin.ModelAdmin):
     )
 
     add_fieldsets = (
-        (None, {"fields": ("email", "phone_number", "password1", "password2")}),
+        (None, {"fields": ("email", "password1", "password2")}),
         ("Permissions", {"fields": ("is_verified", "is_staff", "is_superuser")}),
     )
 

@@ -5,17 +5,21 @@ from . import models as m
 
 @admin.register(m.BusinessAccount)
 class BusinessAccountAdmin(admin.ModelAdmin):
-    list_display = ["user", "business_name", "business_email", "is_verified"]
-
-
-@admin.register(m.BusinessCategory)
-class BusinessCategory(admin.ModelAdmin):
-    list_display = ["name"]
+    list_display = ["user", "business_name", "is_verified"]
 
 
 @admin.register(m.BusinessDayAvailability)
 class BusinessDayAvailabilityAdmin(admin.ModelAdmin):
-    list_display = ["business"]
+    list_display = [
+        "business",
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+    ]
 
 
 @admin.register(m.BusinessTimeAvailability)

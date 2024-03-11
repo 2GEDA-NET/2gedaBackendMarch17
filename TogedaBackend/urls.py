@@ -39,11 +39,11 @@ api_routes = [
     path("account/", include("account.urls", namespace="account")),
     path("auth/", include("authentication.urls", namespace="authentication")),
     path("business/", include("business.urls", namespace="business")),
-    path("education/", include("education.urls", namespace="education")),
-    path("feeds/", include("feeds.urls", namespace="feeds")),
-    path("notifications/", include("notifications.urls", namespace="notifications")),
-    path("polls/", include("poll.urls", namespace="poll")),
-    path("stereo/", include("stereo.urls", namespace="stereo")),
+    # path("education/", include("education.urls", namespace="education")),
+    # path("feeds/", include("feeds.urls", namespace="feeds")),
+    # path("notifications/", include("notifications.urls", namespace="notifications")),
+    # path("polls/", include("poll.urls", namespace="poll")),
+    # path("stereo/", include("stereo.urls", namespace="stereo")),
 ]
 
 urlpatterns = [

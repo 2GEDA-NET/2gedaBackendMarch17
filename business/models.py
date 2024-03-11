@@ -1,55 +1,51 @@
-from django.contrib.auth import get_user_model
+from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils.translation import gettext as _
 
 from account.models import UserProfile
 
-User = get_user_model()
-
-BUSINESS_TYPES = [("personal", "personal"), ("company", "company")]
-
-
-class BusinessCategory(models.Model):
-
-    name = models.CharField(_("Category Name"), max_length=250)
-    description = models.TextField(_("Description"), blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Mate:
-        verbose_name = _("Business Category")
-        verbose_name_plural = _("Business Categories")
-
-    def __str__(self):
-        return self.name
-
 
 class BusinessAccount(models.Model):
 
+    class Category(models.TextChoices):
+        personal = ("personal", "personal")
+        company = ("company", "company")
+
     user = models.ForeignKey(
-        to=User, verbose_name=_("Auth User"), on_delete=models.CASCADE
+        to=settings.AUTH_USER_MODEL,
+        verbose_name=_("Auth User"),
+        on_delete=models.CASCADE,
+    )
+    profile = models.ForeignKey(
+        to=UserProfile,
+        verbose_name=_("Profile"),
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
     )
     business_name = models.CharField(_("Business Name"), max_length=50)
     address = models.CharField(_("Address"), max_length=250, blank=True, null=True)
-
-    business_image = models.ImageField(
-        _("Business Image"), upload_to="business-images/", blank=True, null=True
+    biz_phone_numbers = ArrayField(
+        models.CharField(max_length=20),
+        verbose_name=_("Business phone numbers"),
+        blank=True,
+        null=True,
     )
-    business_type = models.CharField(
-        _("Business Type"), max_length=50, choices=BUSINESS_TYPES, blank=True, null=True
+    display_picture = models.ImageField(
+        _("Business Display Picture"),
+        upload_to="business-pictures/",
+        blank=True,
+        null=True,
     )
     cover_image = models.ImageField(
         _("Cover Image"), upload_to="cover-images/", blank=True, null=True
     )
-    category = models.ForeignKey(
-        to=BusinessCategory,
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-        related_name="category",
-        verbose_name=_("Business Category"),
+    category = models.CharField(
+        _("Category"), max_length=20, choices=Category.choices, blank=True, null=True
     )
-    about = models.TextField(_("About"), blank=True, null=True)
-    business_email = models.EmailField(_("Business Email"), blank=True, null=True)
+    bio = models.TextField(_("Bio"), blank=True, null=True)
+    # business_email = models.EmailField(_("Business Email"), blank=True, null=True)
     website_link = models.CharField(_("Website"), max_length=255, blank=True, null=True)
     is_verified = models.BooleanField(_("Verified"), default=False)
     founded_on = models.DateField(_("Founded On"), blank=True, null=True)
@@ -58,32 +54,6 @@ class BusinessAccount(models.Model):
 
     def __str__(self) -> str:
         return self.business_name
-
-
-class BusinessOwnerProfile(models.Model):
-
-    profile = models.OneToOneField(
-        to=UserProfile,
-        blank=True,
-        null=True,
-        verbose_name=_("User Profile"),
-        on_delete=models.CASCADE,
-        related_name="business_owner",
-    )
-    id_document_type = models.CharField(
-        _("Identification Document Type"), max_length=50, blank=True, null=True
-    )
-    id_document_file = models.FileField(
-        _("Identification Document Type"),
-        upload_to="business-owner-docs",
-        blank=True,
-        null=True,
-    )
-    is_verified = models.BooleanField(_("Verified"), default=False)
-    verified_on = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self
 
 
 class BusinessVerification(models.Model):
@@ -99,7 +69,12 @@ class BusinessVerification(models.Model):
     link2 = models.URLField(_("Link2"), blank=True, null=True)
     link3 = models.URLField(_("Link3"), blank=True, null=True)
     is_completed = models.BooleanField(_("Completed"), default=False)
-    id_image = models.ImageField(_("Government issued ID"), blank=True, null=True)
+    id_image = models.ImageField(
+        _("Government issued ID"),
+        upload_to="business-verify-images",
+        blank=True,
+        null=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -107,36 +82,18 @@ class BusinessVerification(models.Model):
         return self.business.business_name
 
 
-class BusinessDocument(models.Model):
+# class PhoneNumber(models.Model):
 
-    business = models.ForeignKey(
-        to=BusinessAccount, verbose_name=_("Business"), on_delete=models.CASCADE
-    )
-    tax_id = models.CharField(_("Tax ID"), max_length=100, blank=True, null=True)
-    document_type = models.CharField(
-        _("Document Type"), max_length=100, blank=True, null=True
-    )
-    document_file = models.FileField(
-        _("Document File"), upload_to="business-files/", blank=True, null=True
-    )
-    uploaded_on = models.DateTimeField(auto_now_add=True)
+#     business = models.ForeignKey(
+#         to=BusinessAccount, verbose_name=_("Business"), on_delete=models.CASCADE
+#     )
+#     phone1 = models.CharField(_("Phone 1"), max_length=20, blank=True, null=True)
+#     phone2 = models.CharField(_("Phone 2"), max_length=20, blank=True, null=True)
+#     phone3 = models.CharField(_("Phone 3"), max_length=20, blank=True, null=True)
+#     phone4 = models.CharField(_("Phone 4"), max_length=20, blank=True, null=True)
 
-    def __str__(self):
-        return f"{self.document_type} - {self.business.name}"
-
-
-class PhoneNumber(models.Model):
-
-    business = models.ForeignKey(
-        to=BusinessAccount, verbose_name=_("Business"), on_delete=models.CASCADE
-    )
-    phone1 = models.CharField(_("Phone 1"), max_length=20, blank=True, null=True)
-    phone2 = models.CharField(_("Phone 2"), max_length=20, blank=True, null=True)
-    phone3 = models.CharField(_("Phone 3"), max_length=20, blank=True, null=True)
-    phone4 = models.CharField(_("Phone 4"), max_length=20, blank=True, null=True)
-
-    def __str__(self):
-        return self.business
+#     def __str__(self):
+#         return self.business
 
 
 class BusinessTimeAvailability(models.Model):

@@ -2,9 +2,9 @@ from django.db import IntegrityError
 from django.dispatch import receiver
 from rest_framework import serializers
 
-from . import models as m
-
 from utils.exception import BadRequestException
+
+from . import models as m
 
 
 class PostFileSerializer(serializers.ModelSerializer):

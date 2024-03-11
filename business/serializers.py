@@ -8,18 +8,6 @@ from . import models as m
 User = get_user_model()
 
 
-class BusinessCategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = m.BusinessCategory
-        fields = "__all__"
-
-
-class PhoneNumberSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = m.PhoneNumber
-        exclude = ["business"]
-
-
 class BusinessTimeAvailabilitySerializer(serializers.ModelSerializer):
     class Meta:
         model = m.BusinessTimeAvailability
@@ -43,58 +31,49 @@ class BusinessDayAvailabilitySerializer(serializers.ModelSerializer):
 class BusinessAccountSerializer(serializers.ModelSerializer):
     availability = BusinessDayAvailabilitySerializer(write_only=True)
     user = UserRegisterOnlySerializer(required=True)
-    phone_number = PhoneNumberSerializer(write_only=True)
-    category_id = serializers.IntegerField(required=True, write_only=True)
 
     class Meta:
         model = m.BusinessAccount
-        exclude = ["category"]
-        read_only_fields = ["is_verified"]
+        fields = "__all__"
+        read_only_fields = ["is_verified", "profile"]
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
+        # data["user"] = BusinessUserRegisterOnlySerializer(instance.user).data
         availability = m.BusinessDayAvailability.objects.filter(
             business=instance
         ).first()
-        phone_number = m.PhoneNumber.objects.filter(business=instance).first()
-        data["category"] = BusinessCategorySerializer(instance.category).data
-        data["phone_number"] = PhoneNumberSerializer(phone_number).data
         data["availability"] = BusinessDayAvailabilitySerializer(availability).data
         return data
 
     def create(self, validated_data):
-        phone_number = validated_data.pop("phone_number")
-        user_data = validated_data.pop("user")
-        category_id = validated_data.pop("category_id")
-        availability = validated_data.pop("availability")
-        category = m.BusinessCategory.objects.get(pk=category_id)
+        user_data = validated_data.pop("user", {})
+        availability = validated_data.pop("availability", {})
         business_user = User.objects.create_business_user(**user_data)
         business_account = m.BusinessAccount.objects.create(
-            user=business_user, category=category, **validated_data
+            user=business_user, **validated_data
         )
-        m.PhoneNumber.objects.create(business=business_account, **phone_number)
-
         availability_objects = {
             "monday": m.BusinessTimeAvailability.objects.create(
-                **availability.get("monday")
+                **availability.get("monday", {})
             ),
             "tuesday": m.BusinessTimeAvailability.objects.create(
-                **availability.get("tuesday")
+                **availability.get("tuesday", {})
             ),
             "wednesday": m.BusinessTimeAvailability.objects.create(
-                **availability.get("wednesday")
+                **availability.get("wednesday", {})
             ),
             "thursday": m.BusinessTimeAvailability.objects.create(
-                **availability.get("thursday")
+                **availability.get("thursday", {})
             ),
             "friday": m.BusinessTimeAvailability.objects.create(
-                **availability.get("friday")
+                **availability.get("friday", {})
             ),
             "saturday": m.BusinessTimeAvailability.objects.create(
-                **availability.get("saturday")
+                **availability.get("saturday", {})
             ),
             "sunday": m.BusinessTimeAvailability.objects.create(
-                **availability.get("sunday")
+                **availability.get("sunday", {})
             ),
         }
 
@@ -105,13 +84,19 @@ class BusinessAccountSerializer(serializers.ModelSerializer):
         return business_account
 
 
-class BusinessDocumentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = m.BusinessDocument
-        fields = "__all__"
+class BusinessVerificationSerializer(serializers.ModelSerializer):
+    business_id = serializers.IntegerField(required=True, write_only=True)
 
-
-class BusinessOwnerProfileSerializer(serializers.ModelSerializer):
     class Meta:
-        model = m.BusinessOwnerProfile
-        exclude = ["profile", "is_verified"]
+        model = m.BusinessVerification
+        exclude = ["business"]
+        read_only_fields = ["is_completed"]
+
+    def create(self, validated_data):
+        business_id = int(validated_data.pop("business_id", 0))
+        business = m.BusinessAccount.objects.filter(pk=business_id)
+        if not business.exists():
+            raise serializers.ValidationError({"message": "Invalid business id."})
+        return m.BusinessVerification.objects.create(
+            business=business.first(), **validated_data
+        )

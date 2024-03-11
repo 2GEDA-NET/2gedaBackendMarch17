@@ -15,9 +15,7 @@ class UserManager(BaseUserManager):
     Custom user manager for the User model.
     """
 
-    def _create_user(
-        self, email, username, phone_number=None, password=None, **extra_fields
-    ):
+    def _create_user(self, email, username, password=None, **extra_fields):
         """
         Creates and saves a User with the
         given email and password.
@@ -30,48 +28,36 @@ class UserManager(BaseUserManager):
 
         email = self.normalize_email(email).lower().strip()
         username = username.lower()
-        user = self.model(
-            username=username, email=email, phone_number=phone_number, **extra_fields
-        )
+        user = self.model(username=username, email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_user(
-        self, email, username, phone_number=None, password=None, **extra_fields
-    ):
+    def create_user(self, email, username, password=None, **extra_fields):
         """
         Creates and saves a regular User with the
-        given email, phone number, and password.
+        given email, and password.
         """
         extra_fields.setdefault("is_verified", False)
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
         extra_fields.setdefault("is_personal", True)
-        return self._create_user(
-            email, username, phone_number, password, **extra_fields
-        )
+        return self._create_user(email, username, password, **extra_fields)
 
-    def create_business_user(
-        self, email, username=None, phone_number=None, password=None, **extra_fields
-    ):
+    def create_business_user(self, email, username=None, password=None, **extra_fields):
         """
         Creates and saves a business User with the
-        given email, phone number, and password.
+        given email, and password.
         """
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_business", True)
         extra_fields.setdefault("is_personal", False)
-        return self._create_user(
-            email, username, phone_number, password, **extra_fields
-        )
+        return self._create_user(email, username, password, **extra_fields)
 
-    def create_superuser(
-        self, email, username=None, phone_number=None, password=None, **extra_fields
-    ):
+    def create_superuser(self, email, username=None, password=None, **extra_fields):
         """
         Creates and saves a superuser with the
-        given email, phone number, and password.
+        given email, and password.
         """
         extra_fields.setdefault("is_verified", True)
         extra_fields.setdefault("is_staff", True)
@@ -80,9 +66,7 @@ class UserManager(BaseUserManager):
             raise ValueError("Superuser must have is_staff=True")
         if extra_fields.get("is_superuser") is not True:
             raise ValueError("Superuser must have is_superuser=True")
-        return self._create_user(
-            username, email, phone_number, password, **extra_fields
-        )
+        return self._create_user(username, email, password, **extra_fields)
 
 
 class User(AbstractUser):
@@ -90,9 +74,6 @@ class User(AbstractUser):
     is_business = models.BooleanField(_("Business Account"), default=False)
     is_personal = models.BooleanField(_("Personal Account"), default=False)
     is_admin = models.BooleanField(_("Admin Account"), default=False)
-    phone_number = models.CharField(
-        _("Phone Number"), unique=True, max_length=20, blank=True, null=True
-    )
     is_verified = models.BooleanField(_("Verified"), default=False)
     secret_key = models.CharField(max_length=64)
 
@@ -101,9 +82,6 @@ class User(AbstractUser):
     USERNAME_FIELD = "email"
     EMAIL_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
-
-    # class Meta:
-    #     swappable = "AUTH_USER_MODEL"
 
     def __str__(self):
         return self.email or self.username or "-"
