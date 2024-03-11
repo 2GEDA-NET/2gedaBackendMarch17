@@ -76,4 +76,12 @@ urlpatterns = [
         api.SingleStatusAPIView.as_view(),
         name="status_friends",
     ),
+
+
+
+    path(
+        "post/<int:post_id>/promote/",
+        api.PromotePostView.as_view(),
+        name="promote_post",
+    ),
 ]

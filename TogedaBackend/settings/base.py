@@ -178,11 +178,26 @@ CHANNEL_LAYERS = {
 CSRF_TRUSTED_ORIGINS = ["http://development.2geda.net/"]
 
 # Paystack Integration
-PAYSTACK_PUBLIC_KEY = config("PAYSTACK_PUBLIC_KEY")
-PAYSTACK_SECRET_KEY = config("PAYSTACK_SECRET_KEY")
-PAYSTACK_PAYMENT_CALLBACK_URL = config("PAYSTACK_PAYMENT_CALLBACK_URL")
+PAYSTACK_PUBLIC_KEY = (
+    config("PAYSTACK_PUBLIC_KEY")
+    if not config("DEV", cast=bool)
+    else config("PAYSTACK_TEST_PUBIC_KEY")
+)
 
-PAYSTACK_BASE_URL = ""
+PAYSTACK_SECRET_KEY = (
+    config("PAYSTACK_SECRET_KEY")
+    if not config("DEV", cast=bool)
+    else config("PAYSTACK_TEST_SECRET_KEY")
+)
+
+PAYSTACK_PAYMENT_CALLBACK_URL = (
+    config("PAYSTACK_PAYMENT_CALLBACK_URL")
+    if not config("DEV", cast=bool)
+    else config("PAYSTACK_TEST_PAYMENT_CALLBACK_URL")
+)
+
+PAYSTACK_BASE_URL = config("PAYSTACK_BASE_URL")
+
 
 # Twilio Account configuration
 SMS_BACKEND = "sms.backends.twilio.SmsBackend"
@@ -219,7 +234,6 @@ else:
     # Static files (CSS, JavaScript, Images)
     # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
-
     STATIC_URL = "/static/"
     MEDIA_URL = "/media/"
 
@@ -236,8 +250,6 @@ else:
 # print("Media root: ", MEDIA_ROOT)
 
 
-
-
 if config("DEV", cast=bool):
     CELERY_BROKER_URL = config("REDIS_URL_DEV")
 else:
@@ -249,8 +261,8 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 
 
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'UTC'
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "UTC"
 
 
 DATABASES = {

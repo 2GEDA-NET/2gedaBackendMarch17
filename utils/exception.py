@@ -28,3 +28,17 @@ class NotFoundException(CustomException):
         self.data = data
 
         super().__init__(detail, code)
+
+
+
+
+class ServerException(CustomException):
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    def __init__(self, message: str, data=None, detail=None, code=None):
+
+        self.message = message
+
+        self.data = data
+
+        super().__init__(detail, code)

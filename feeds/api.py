@@ -1289,3 +1289,38 @@ class RepostView(APIView):
         context = {"post": instance.to_dict()}
 
         return CustomResponse(data=context, message="created repost succussfuly")
+
+
+from payments.requests import PaystackClient, params
+from pprint import pprint
+
+
+class PromotePostView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Request, post_id):
+
+        post = m.Post.objects.filter(id=post_id, user=request.user).first()
+
+        if post is None:
+            raise NotFoundException("this post does not exist")
+
+        promotion_plain_amount = 500
+
+        transaction_initializer = params.PromotionPlanIntializeTransaction(
+            email=request.user.email,
+            amount=promotion_plain_amount,
+            metadata=params.PromotionPlanMetaData(post_id=post.id),
+        )
+
+        transaction = PaystackClient()
+        pprint(transaction.initialize_transaction(transaction_initializer))
+
+
+        return CustomResponse(data=None, message="promotion plan initialized succussfuly")
+
+
+
+
+
