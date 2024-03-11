@@ -49,4 +49,6 @@ class PaystackClient:
 
         data = self.post(path="/transaction/initialize", data=initializer.model_dump_json())
 
+        print(data)
+
         return data
