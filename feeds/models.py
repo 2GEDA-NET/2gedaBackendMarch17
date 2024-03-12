@@ -1,4 +1,5 @@
-from typing import Iterable
+from datetime import timedelta
+from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.db import models
 from rest_framework import serializers
@@ -80,7 +81,7 @@ class Post(models.Model):
     def get_files(self):
 
         return [file.to_dict() for file in self.file.all()]
-    
+
     def get_repost(self):
 
         return self.repost.to_dict() if self.repost else None
@@ -180,6 +181,7 @@ class Comment(models.Model):
         }
 
 
+
 class PostReaction(models.Model):
     LIKE = 1
     DISLIKE = 2
@@ -202,10 +204,17 @@ class PostReaction(models.Model):
     reaction_type = models.SmallIntegerField(choices=REACTION_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def to_user_reaction(self):
+
+        return {
+            "user": self.user.get_username(),
+            "reaction_type": self.reaction_type,
+        }
+
     def to_dict(self):
 
         return {
-            "post": self.post.id,
+            "c": self.post.id,
             "user": self.user.id,
             "reaction_type": self.reaction_type,
             "created_at": str(self.created_at),
@@ -406,3 +415,70 @@ class BlockedUsers(models.Model):
 
 
 
+
+
+
+
+class PromotedPostManager(models.Manager):
+    def get_promoted_posts(self):
+        now = timezone.now()
+        return self.filter(expired_at__gt=now)
+
+
+class PromotedPost(models.Model):
+
+    BASIC = 1
+    STANDARD = 2
+    PREMIUM = 3
+    PRO = 4
+
+    PLAN_CHOICES = [
+        (BASIC, "Basic"),
+        (STANDARD, "Standard"),
+        (PREMIUM, "Premium"),
+        (PRO, "Pro"),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    plan = models.SmallIntegerField(choices=PLAN_CHOICES)
+    description = models.TextField(null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expired_at = models.DateTimeField()
+
+
+    objects = PromotedPostManager()
+
+    def isexpired(self):
+
+        now = timezone.now()
+
+        return self.expired_at > now
+
+    def save(self, *args, **kwargs):
+
+        if not self.created_at:
+            self.created_at = timezone.now()
+
+        plan_validity = {
+            self.BASIC: timedelta(days=1),
+            self.STANDARD: timedelta(days=7),
+            self.PREMIUM: timedelta(days=14),
+            self.PRO: timedelta(days=30),
+        }
+
+        self.expired_at = self.created_at + plan_validity.get(self.plan, timedelta(days=1))
+
+        super().save(*args, **kwargs)
+
+    def to_dict(self):
+
+        return {
+            "id": self.id,
+            "user": self.user.id,
+            "post": self.post.to_dict(),
+            "is_promotion_expired": self.isexpired(),
+            "description": self.description,
+            "created_at": self.created_at,
+            "expired_at": self.expired_at,
+        }

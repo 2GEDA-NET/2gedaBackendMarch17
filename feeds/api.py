@@ -53,11 +53,20 @@ class PostAPIView(APIView):
 
                 serialized_posts = [post.to_dict() for post in filtered_posts]
 
-            elif param == "audio":
+            elif param == "music":
 
                 filtered_posts = m.Post.objects.filter(
-                    user=request.user, file__file_type__in=mime.audio_types
+                    user=request.user, file__file_type__in=mime.music_types
                 )
+
+                serialized_posts = [post.to_dict() for post in filtered_posts]
+
+            elif param == "voice_note":
+
+                filtered_posts = m.Post.objects.filter(
+                    user=request.user, file__file_type__in=mime.voice_note_types
+                )
+
 
             elif param == "file":
 
@@ -168,10 +177,14 @@ class ReactionPostView(APIView):
 
         post = m.Post.objects.filter(id=post_id).first()
 
+        
+        reactions = m.PostReaction.objects.filter(post=post).all()        
+
         if not post:
             raise NotFoundException("this post does not exist")
 
         context = {
+            "user_reactions": [reaction.to_user_reaction() for reaction in reactions],
             "reactions": post.get_total_post_reactions(),
             "post": {"id": post.id},
         }
@@ -1291,35 +1304,80 @@ class RepostView(APIView):
         return CustomResponse(data=context, message="created repost succussfuly")
 
 
-from payments.requests import PaystackClient, params
+from payments.requests import PaystackClient, params, IntializeTransactionResponse
 from pprint import pprint
+from django.conf import settings
 
 
 class PromotePostView(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def post(self, request: Request, post_id):
+    def get(self, request:Request):
 
-        post = m.Post.objects.filter(id=post_id, user=request.user).first()
+        promoted_posts =  m.PromotedPost.objects.filter(user=request.user).all()
+
+        context = {"promoted_posts": [promoted_post.to_dict() for promoted_post in promoted_posts]}
+
+        return CustomResponse(
+            data=context, message="all promotion plans"
+        )
+
+    def post(self, request: Request):
+
+        if type(request.data["post"]) is not int:
+            raise BadRequestException(f"post is a valid int or pk value")
+
+        post = m.Post.objects.filter(id=request.data["post"], user=request.user).first()
 
         if post is None:
             raise NotFoundException("this post does not exist")
+        
+        if m.PromotedPost.objects.filter(post=post).filter().exists():
+            raise BadRequestException("There is an active promoted plan on this post, please wait after the validity period")
 
-        promotion_plain_amount = 500
+        serializer = s.PromotePostSerializer(
+            data=request.data, context={"user": request.user, "post": post}
+        )
+
+        if not serializer.is_valid():
+            raise BadRequestException(
+                message=serializer.error_messages, data=serializer.errors
+            )
+
+        plan_amount= {
+            m.PromotedPost.BASIC: 1000,
+            m.PromotedPost.STANDARD: 5000,
+            m.PromotedPost.PREMIUM: 9000,
+            m.PromotedPost.PRO: 24000,
+        }
+
+        promotion_plain_amount = plan_amount.get(serializer.validated_data["plan"], 1000)
+
+
+        promote_post_data = dict(serializer.validated_data)
+
+        promote_post_data.update({"post": post.id, "user": request.user.id})
+
 
         transaction_initializer = params.PromotionPlanIntializeTransaction(
             email=request.user.email,
             amount=promotion_plain_amount,
-            metadata=params.PromotionPlanMetaData(post_id=post.id),
+            metadata=params.PromotionPlanMetaData(**promote_post_data),
         )
 
-        transaction = PaystackClient()
-        pprint(transaction.initialize_transaction(transaction_initializer))
+        client = PaystackClient()
 
+        response = IntializeTransactionResponse(
+            **client.initialize_transaction(transaction_initializer)
+        )
 
-        return CustomResponse(data=None, message="promotion plan initialized succussfuly")
+        context = {"payment_url": response.data.authorization_url}
 
+        return CustomResponse(
+            data=context, message="promotion plan initialized succussfuly"
+        )
+    
 
 
 

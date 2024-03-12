@@ -80,7 +80,7 @@ urlpatterns = [
 
 
     path(
-        "post/<int:post_id>/promote/",
+        "post/promote/",
         api.PromotePostView.as_view(),
         name="promote_post",
     ),

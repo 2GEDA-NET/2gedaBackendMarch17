@@ -25,9 +25,30 @@ DATABASES = {
     },
 }
 
-# Paystack setup
-PAYSTACK_SECRET_KEY = config("PAYSTACK_SECRET_KEY")
-PAYSTACK_BASE_URL = config("PAYSTACK_BASE_URL")
+
+
+
+# Paystack Integration
+PAYSTACK_PUBLIC_KEY = (
+    config("PAYSTACK_PUBLIC_KEY")
+    if not config("DEV", cast=bool)
+    else config("PAYSTACK_TEST_PUBIC_KEY")
+)
+
+PAYSTACK_SECRET_KEY = (
+    config("PAYSTACK_SECRET_KEY")
+    if not config("DEV", cast=bool)
+    else config("PAYSTACK_TEST_SECRET_KEY")
+)
+
+PAYSTACK_PAYMENT_CALLBACK_URL = (
+    config("PAYSTACK_PAYMENT_CALLBACK_URL")
+    if not config("DEV", cast=bool)
+    else config("PAYSTACK_TEST_PAYMENT_CALLBACK_URL")
+)
+
+PAYSTACK_BASE__URL = config("PAYSTACK_BASE__URL")
+
 
 
 

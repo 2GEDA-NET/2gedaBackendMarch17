@@ -37,11 +37,8 @@ video_types = [
 
 
 
-audio_types = [
+music_types = [
     "audio/mpeg",
-    "audio/wav",
-    "audio/ogg",
-    "audio/midi",
     "audio/x-ms-wma",
     "audio/x-ms-wax",
     "audio/x-flac",
@@ -50,6 +47,11 @@ audio_types = [
     "audio/amr",
     "audio/aac",
     "audio/mp4"
+]
+
+
+voice_note_types = [
+    "audio/wav"
 ]
 
 

@@ -6,14 +6,12 @@ from utils.exception import BadRequestException, ServerException
 
 class PaystackClient:
     def __init__(self):
-        self.base_url: str = settings.PAYSTACK_BASE_URL
+        self.base_url: str = settings.PAYSTACK_BASE__URL
 
         self.headers  = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
         }
-
-        print(self.base_url)
 
         self.timeout = 30  # Timeout in 30 seconds
 
@@ -48,7 +46,5 @@ class PaystackClient:
     def initialize_transaction(self, initializer:params.IntializeTransaction):
 
         data = self.post(path="/transaction/initialize", data=initializer.model_dump_json())
-
-        print(data)
 
         return data

@@ -14,8 +14,8 @@ User = get_user_model()
 class PaymentTransaction(models.Model):
     """General Payment transaction model"""
 
-    profile = models.ForeignKey(
-        UserProfile,
+    user = models.ForeignKey(
+        User,
         on_delete=models.SET_NULL,
         null=True,
         verbose_name=_("Auth User"),
@@ -60,7 +60,7 @@ class PaymentTransaction(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
-        return f"{self.profile}"
+        return f"{self.user}"
 
     def mark_as_success(self):
         if self.status == "pending":

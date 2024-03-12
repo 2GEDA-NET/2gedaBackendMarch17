@@ -321,3 +321,23 @@ class RepostSerializer(serializers.Serializer):
             )
 
         return instance
+
+
+
+
+class PromotePostSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = m.PromotedPost
+        fields = ("plan", "description", )
+        
+
+    def create(self, validated_data):
+
+        user = self.context["user"]
+
+        post = self.context["post"]
+
+        instance = m.PromotedPost.objects.create(user=user, post=post, **validated_data)
+
+        return instance
