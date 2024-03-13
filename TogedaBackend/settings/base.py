@@ -121,7 +121,7 @@ AUTHENTICATION_BACKENDS = [
     "authentication.backends.UsernameAuthBackend",
 ]
 
-FROM_EMAIL = "2gedafullstack@gmail.com"
+
 
 GEOIP_PATH = os.path.join(BASE_DIR, "geoip")
 
@@ -215,10 +215,14 @@ STATICFILES_DIRS = [BASE_DIR / "notifications/static"]
 if not config("SEND_EMAIL", cast=bool):
     EMAIL_HOST = config("EMAIL_HOST")
     EMAIL_HOST_USER = config("EMAIL_HOST_USER")
-    EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
+    EMAIL_HOST_PASSWORD = config("EMAIL_PASSWORD")
     EMAIL_PORT = 465
     EMAIL_USE_TLS = False
     EMAIL_USE_SSL = True
+    FROM_EMAIL = config("EMAIL_HOST_USER")
+    DEFAULT_FROM_EMAIL = f'2geda <support@2geda.net>'
+
+
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 

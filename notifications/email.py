@@ -18,7 +18,7 @@ class EmailThread(threading.Thread):
         mail.send_mail(
             subject=self.subject,
             message=self.plain_message,
-            from_email=settings.FROM_EMAIL,
+            from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=self.receiver,
             html_message=self.html_message,
         )
