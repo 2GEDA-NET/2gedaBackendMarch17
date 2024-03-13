@@ -124,7 +124,7 @@ class PostAPIView(APIView):
 # This is to make any changes (update or delete) to a single post
 class SinglePostView(APIView):
 
-    permission_classes = [IsAuthenticated]  # IsBlockedPost]
+    permission_classes = []
 
     def get(self, request: Request, post_id: int):
 

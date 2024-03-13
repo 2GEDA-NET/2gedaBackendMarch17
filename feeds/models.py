@@ -98,14 +98,22 @@ class Post(models.Model):
                 model = Hashtag
                 fields = ("name",)
 
+        class UserSerializer(serializers.ModelSerializer):
+            class Meta:
+                model = User
+                fields = ("id", "username", "email", )
+
         tagged_user_serializer = TaggedUserSerializer(
             self.tagged_users.all(), many=True
         )
 
         hashtags_serializer = HashtagSerializer(self.hashtags.all(), many=True)
 
+        user_serializer = UserSerializer(self.user)
+
         return {
             "id": self.id,
+            "user": dict(user_serializer.data),
             "text_content": self.text_content,
             "files": self.get_files(),
             "location": self.location,
